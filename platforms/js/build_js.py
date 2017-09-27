@@ -154,8 +154,8 @@ class Builder:
                "-DBUILD_PACKAGE=OFF",
                "-DBUILD_TESTS=OFF",
                "-DBUILD_PERF_TESTS=OFF",
-               "-DCMAKE_C_FLAGS='-Os'",
-               "-DCMAKE_CXX_FLAGS='-Os'"]
+               "-DCMAKE_C_FLAGS='-Oz'",
+               "-DCMAKE_CXX_FLAGS='-Oz'"]
         if self.options.build_doc:
             cmd.append("-DBUILD_DOCS=ON")
         else:

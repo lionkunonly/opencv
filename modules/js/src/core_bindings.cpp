@@ -533,10 +533,6 @@ EMSCRIPTEN_BINDINGS(binding_utils)
 
     function("CV_MAT_DEPTH", &binding_utils::cvMatDepth);
 
-    function("CamShift", select_overload<emscripten::val(const cv::Mat&, Rect&, TermCriteria)>(&binding_utils::CamShiftWrapper));
-
-    function("meanShift", select_overload<emscripten::val(const cv::Mat&, Rect&, TermCriteria)>(&binding_utils::meanShiftWrapper));
-
     function("getBuildInformation", &binding_utils::getBuildInformation);
 
     constant("CV_8UC1", CV_8UC1);

@@ -134,11 +134,11 @@ def makeWhiteList(module_list):
                 wl[k] = m[k]
     return wl
 
-white_list = makeWhiteList([objdetect])
+white_list = makeWhiteList([{'': ['']}])
 
 # Features to be exported
 export_enums = False
-export_consts = True
+export_consts = False
 with_wrapped_functions = True
 with_default_params = True
 with_vec_from_js_array = True

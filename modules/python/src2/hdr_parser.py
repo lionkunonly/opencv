@@ -571,6 +571,7 @@ class CppHeaderParser(object):
 
                         if arg_type == "InputArray":
                             arg_type = mat
+                            modlist.append("/I")
                         elif arg_type == "InputOutputArray":
                             arg_type = mat
                             modlist.append("/IO")

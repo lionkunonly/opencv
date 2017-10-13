@@ -125,6 +125,9 @@ video = {'': ['CamShift', 'calcOpticalFlowFarneback', 'calcOpticalFlowPyrLK', 'c
          'BackgroundSubtractorMOG2': ['BackgroundSubtractorMOG2', 'apply'],
          'BackgroundSubtractor': ['apply', 'getBackgroundImage']}
 
+dnn = {'': ['readNetFromCaffe', 'readNetFromTensorflow', 'readNetFromTorch', 'blobFromImage', 'blobFromImages'],\
+       'Net': ['Net', 'empty', 'setInput', 'forward']}
+
 def makeWhiteList(module_list):
     wl = {}
     for m in module_list:
@@ -135,7 +138,7 @@ def makeWhiteList(module_list):
                 wl[k] = m[k]
     return wl
 
-white_list = makeWhiteList([core, imgproc, objdetect, video])
+white_list = makeWhiteList([core, imgproc, objdetect, video, dnn])
 
 # Features to be exported
 export_enums = False
@@ -156,7 +159,7 @@ type_dict = {
 }
 
 def normalize_class_name(name):
-    return re.sub(r"^cv\.", "", name).replace(".", "_")
+    return re.sub(r"^cv\.([a-zA-Z0-9]*\.)*", "", name).replace(".", "_")
 
 
 class ClassProp(object):
@@ -219,6 +222,19 @@ def handle_vector(tp):
         tp = 'std::vector<' + "::".join(tp.split('_')[1:]) + '>'
     return tp
 
+def handle_intput_output_mat(outputarg, inputarg, tp):
+    if outputarg:
+        return tp + "&"
+    elif inputarg:
+        return "const " + tp + "&"
+
+def handle_const_reference(const, reference, tp):
+    result = tp
+    if const:
+        result = "const " + result
+    if reference:
+        result = result + "&"
+    return result
 
 class ArgInfo(object):
     def __init__(self, arg_tuple):
@@ -228,13 +244,18 @@ class ArgInfo(object):
         self.isarray = False
         self.arraylen = 0
         self.arraycvt = None
-        self.inputarg = True
+        self.inputarg = False
         self.outputarg = False
         self.returnarg = False
         self.const = False
         self.reference = False
+        print(self.tp, arg_tuple)
         for m in arg_tuple[3]:
-            if m == "/O":
+            if m == "/I":
+                self.inputarg = True
+                self.outputarg = False
+                self.returnarg = False
+            elif m == "/O":
                 self.inputarg = False
                 self.outputarg = True
                 self.returnarg = True
@@ -248,25 +269,32 @@ class ArgInfo(object):
             elif m.startswith("/CA"):
                 self.isarray = True
                 self.arraycvt = m[2:].strip()
-            elif m == "/C":
+            if m == "/C":
                 self.const = True
             elif m == "/Ref":
                 self.reference = True
         if self.tp == "Mat":
-            if self.outputarg:
-                self.tp = "cv::Mat&"
-            elif self.inputarg:
-                self.tp = "const cv::Mat&"
-        if self.tp == "vector_Mat":
-            if self.outputarg:
-                self.tp = "std::vector<cv::Mat>&"
-            elif self.inputarg:
-                self.tp = "const std::vector<cv::Mat>&"
-        self.tp = handle_vector(self.tp).strip()
-        if self.const:
-            self.tp = "const " + self.tp
-        if self.reference:
-            self.tp = self.tp + "&"
+            self.tp = "cv::Mat"
+            if self.outputarg or self.inputarg:
+                self.tp = handle_intput_output_mat(self.outputarg, self.inputarg, self.tp)
+            else:
+                self.tp = handle_const_reference(self.const, self.reference, self.tp)
+        elif self.tp == "vector_Mat":
+            self.tp = "std::vector<cv::Mat>"
+            if self.outputarg or self.inputarg:
+                self.tp = handle_intput_output_mat(self.outputarg, self.inputarg, self.tp)
+            else:
+                self.tp = handle_const_reference(self.const, self.reference, self.tp)
+        elif self.tp == "vector_vector_Mat":
+            self.tp = "std::vector<std::vector<cv::Mat> >"
+            if self.outputarg or self.inputarg:
+                self.tp = handle_intput_output_mat(self.outputarg, self.inputarg, self.tp)
+            else:
+                self.tp = handle_const_reference(self.const, self.reference, self.tp)
+        else:
+            self.tp = handle_vector(self.tp).strip()
+            self.tp = handle_const_reference(self.const, self.reference, self.tp)
+        print(self.tp)
         self.py_inputarg = False
         self.py_outputarg = False
 
@@ -287,6 +315,7 @@ class FuncVariant(object):
         self.args = []
         self.array_counters = {}
 
+        print(self.class_name, self.name)
         for a in decl[3]:
             ainfo = ArgInfo(a)
             if ainfo.isarray and not ainfo.arraycvt:
@@ -732,8 +761,8 @@ class JSWrapperGenerator(object):
         # step 1: scan the headers and extract classes, enums and functions
         for hdr in src_files:
             decls = self.parser.parse(hdr)
-            # print(hdr);
-            # self.print_decls(decls);
+            print(hdr)
+            self.print_decls(decls)
             if len(decls) == 0:
                 continue
             for decl in decls:

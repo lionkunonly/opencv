@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Load Caffe framework models Example</title>
+<link href="js_example_style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<h2>Load Caffe framework models Example</h2>
+<p>
+    &lt;canvas&gt; elements named <b>canvasInput</b> and <b>canvasOutput</b> have been prepared.<br>
+    Click <b>Try it</b> button to see the result. You can choose another image.<br>
+    You can change the code in the &lt;textarea&gt; to investigate more.
+</p>
+<div>
+<div class="control"><button id="tryIt" disabled>Try it</button></div>
+<textarea class="code" rows="9" cols="100" id="codeEditor" spellcheck="false">
+</textarea>
+<p class="err" id="errorMessage"></p>
+</div>
+<div>
+    <table cellpadding="0" cellspacing="0" width="0" border="0">
+    <tr>
+        <td>
+            <canvas id="canvasInput"></canvas>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div class="caption">canvasInput <input type="file" id="fileInput" name="file" accept="image/*" /></div>
+        </td>
+    </tr>
+    </table>
+</div>
+<script src="utils.js" type="text/javascript"></script>
+<script id="codeSnippet" type="text/code-snippet">
+let src = cv.imread('canvasInput');
+let net = cv.readNetFromCaffe('bvlc_googlenet.prototxt', 'bvlc_googlenet.caffemodel');
+if (net.empty()) {
+    throw 'Failed to read net';
+}
+let inputBlob = cv.blobFromImage(src, 1, new cv.Size(224, 224), new cv.Scalar(104, 117, 123));
+
+net.setInput(inputBlob, "data");
+let start = Date.now();
+let prob = net.forward("prob");
+let minMax = cv.minMaxLoc(prob);
+let delta = Date.now() - start;
+console.log('Best class: #' + minMax.maxLoc.x + ' ' + keywords[minMax.maxLoc.x] + ' Probability: ' + minMax.maxVal + ' in ' + delta);
+
+prob.delete();
+inputBlob.delete();
+net.delete();
+src.delete();
+</script>
+<script type="text/javascript">
+let utils = new Utils('errorMessage');
+
+utils.loadCode('codeSnippet', 'codeEditor');
+utils.loadImageToCanvas('space_shuttle.jpg', 'canvasInput');
+utils.addFileInputHandler('fileInput', 'canvasInput');
+
+let tryIt = document.getElementById('tryIt');
+tryIt.addEventListener('click', () => {
+    utils.executeCode('codeEditor');
+});
+
+let keywords;
+
+utils.loadOpenCv(() => {
+    let modelTxt = 'bvlc_googlenet.prototxt';
+    utils.createFileFromUrl(modelTxt, modelTxt, () => {
+        let modelBin = 'bvlc_googlenet.caffemodel';
+        utils.createFileFromUrl(modelBin, modelBin, () => {
+            let url = 'synset_words.txt';
+            let request = new XMLHttpRequest();
+            request.open('GET', url, true);
+            request.onload = function(ev) {
+                if (request.readyState === 4) {
+                    if (request.status === 200) {
+                        keywords = request.response;
+                        keywords = keywords.split('\n');
+                        for(let i = 0; i < keywords.length; ++i) {
+                            keywords[i] = keywords[i].replace(/^n[0-9]*\s/, '');
+                        }
+                        tryIt.removeAttribute('disabled');
+                    } else {
+                        self.printError('Failed to load ' + url + ' status: ' + request.status);
+                    }
+                }
+            };
+            request.send();
+        });
+    });
+});
+</script>
+</body>
+</html>

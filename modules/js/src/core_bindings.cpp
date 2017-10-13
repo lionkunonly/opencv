@@ -73,11 +73,14 @@
 #include "opencv2/video/tracking.hpp"
 #include "opencv2/video/background_segm.hpp"
 #include "opencv2/objdetect.hpp"
+#include "opencv2/dnn.hpp"
+#include "opencv2/dnn/all_layers.hpp"
 
 #include <emscripten/bind.h>
 
 using namespace emscripten;
 using namespace cv;
+using namespace cv::dnn;
 
 namespace binding_utils
 {
@@ -329,6 +332,7 @@ EMSCRIPTEN_BINDINGS(binding_utils)
     register_vector<double>("DoubleVector");
     register_vector<cv::Point>("PointVector");
     register_vector<cv::Mat>("MatVector");
+    register_vector<std::vector<cv::Mat> >("MatVectorVector");
     register_vector<cv::Rect>("RectVector");
 
     emscripten::class_<cv::Mat>("Mat")

@@ -138,7 +138,7 @@ def makeWhiteList(module_list):
                 wl[k] = m[k]
     return wl
 
-white_list = makeWhiteList([core, imgproc, objdetect, video, dnn])
+white_list = makeWhiteList([core, dnn])
 
 # Features to be exported
 export_enums = False
@@ -249,7 +249,6 @@ class ArgInfo(object):
         self.returnarg = False
         self.const = False
         self.reference = False
-        print(self.tp, arg_tuple)
         for m in arg_tuple[3]:
             if m == "/I":
                 self.inputarg = True
@@ -294,7 +293,6 @@ class ArgInfo(object):
         else:
             self.tp = handle_vector(self.tp).strip()
             self.tp = handle_const_reference(self.const, self.reference, self.tp)
-        print(self.tp)
         self.py_inputarg = False
         self.py_outputarg = False
 
@@ -315,7 +313,6 @@ class FuncVariant(object):
         self.args = []
         self.array_counters = {}
 
-        print(self.class_name, self.name)
         for a in decl[3]:
             ainfo = ArgInfo(a)
             if ainfo.isarray and not ainfo.arraycvt:
@@ -761,8 +758,8 @@ class JSWrapperGenerator(object):
         # step 1: scan the headers and extract classes, enums and functions
         for hdr in src_files:
             decls = self.parser.parse(hdr)
-            print(hdr)
-            self.print_decls(decls)
+            # print(hdr)
+            # self.print_decls(decls)
             if len(decls) == 0:
                 continue
             for decl in decls:

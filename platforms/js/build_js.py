@@ -171,6 +171,7 @@ class Builder:
             flags += "-s WASM=1 "
         if self.options.enable_exception:
             flags += "-s DISABLE_EXCEPTION_CATCHING=0 "
+        flags += "-O3"
         return flags
 
     def config(self):

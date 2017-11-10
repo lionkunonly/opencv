@@ -307,7 +307,7 @@ namespace binding_utils
     }
 
     ORB_SLAM2::System* createSystem(const string &strVocFile, const string &strSettingsFile, const int sensor) {
-        return new ORB_SLAM2::System(strVocFile, strSettingsFile, System::eSensor(sensor));
+        return new ORB_SLAM2::System(strVocFile, strSettingsFile, System::eSensor(sensor), false);
     }
 }
 
@@ -586,5 +586,7 @@ EMSCRIPTEN_BINDINGS(binding_utils)
         .function("Shutdown", &ORB_SLAM2::System::Shutdown)
         .function("GetTrackingState", &ORB_SLAM2::System::GetTrackingState)
         .function("GetTrackedMapPoints", &ORB_SLAM2::System::GetTrackedMapPoints)
-        .function("GetTrackedKeyPointsUn", &ORB_SLAM2::System::GetTrackedKeyPointsUn);
+        .function("GetTrackedKeyPointsUn", &ORB_SLAM2::System::GetTrackedKeyPointsUn)
+        .function("GetKeyFramesInMap", &ORB_SLAM2::System::GetKeyFramesInMap)
+        .function("GetMapPointsInMap", &ORB_SLAM2::System::GetMapPointsInMap);
 }

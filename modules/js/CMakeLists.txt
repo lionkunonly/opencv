@@ -72,7 +72,7 @@ ocv_add_executable(${the_module} ${bindings_cpp})
 
 set_target_properties(${the_module} PROPERTIES COMPILE_FLAGS "-Wno-missing-prototypes")
 
-set_target_properties(${the_module} PROPERTIES LINK_FLAGS "--memory-init-file 0 -s TOTAL_MEMORY=1073741824 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME=\"'cv'\" -s DEMANGLE_SUPPORT=1 -s FORCE_FILESYSTEM=1 --use-preload-plugins --bind --post-js ${JS_HELPER} -Wno-missing-prototypes")
+set_target_properties(${the_module} PROPERTIES LINK_FLAGS "--memory-init-file 0 -s TOTAL_MEMORY=1073741824 -O2 --js-opts 0 -g4 -s USE_PTHREADS=2 -s PTHREAD_POOL_SIZE=6 -s ALLOW_MEMORY_GROWTH=1 -s FORCE_FILESYSTEM=1 -s NO_EXIT_RUNTIME=1 --use-preload-plugins --bind --post-js ${JS_HELPER} -Wno-missing-prototypes")
 set_target_properties(${the_module} PROPERTIES COMPILE_FLAGS "-Wno-non-virtual-dtor")
 
 # add UMD wrapper

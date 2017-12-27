@@ -74,6 +74,8 @@
 #include "opencv2/video/background_segm.hpp"
 #include "opencv2/objdetect.hpp"
 #include "opencv2/dnn.hpp"
+#include "opencv2/dnn/layer.hpp"
+#include "opencv2/dnn/dict.hpp"
 
 #include <emscripten/bind.h>
 
@@ -105,6 +107,12 @@ namespace binding_utils
     cv::Mat* createMat(int rows, int cols, int type, intptr_t data, size_t step)
     {
         return new cv::Mat(rows, cols, type, reinterpret_cast<void*>(data), step);
+    }
+
+    cv::Mat* createMatBySizes(emscripten::val js_sizes, int type)
+    {
+        std::vector<int> sizes = vecFromJSArray<int>(js_sizes);
+        return new cv::Mat(sizes, type);
     }
 
     static emscripten::val getMatSize(const cv::Mat& mat)
@@ -322,6 +330,50 @@ namespace binding_utils
     std::string getBuildInformation() {
         return cv::getBuildInformation();
     }
+
+    template<typename T>
+    void dictSet(Dict& dict, const std::string& key, const T& value) {
+        dict.set(key, value);
+    }
+
+    Ptr<Layer> createLayerInstanceWrapper(const std::string &type, LayerParams& params) {
+        return LayerFactory::createLayerInstance(type, params);
+    }
+
+    emscripten::val getMemoryShapesWrapper(const Layer& layer, emscripten::val js_inputs, const int requiredOutputs)
+    {
+        std::vector<val> val_vect = vecFromJSArray<val>(js_inputs);
+        std::vector<MatShape> inputs, outputs, internals;
+        for (unsigned int i = 0; i < val_vect.size(); ++i) {
+            std::vector<int> size = vecFromJSArray<int>(val_vect[i]);
+            inputs.push_back(size);
+        }
+        layer.getMemoryShapes(inputs, requiredOutputs, outputs, internals);
+        emscripten::val js_outputs = emscripten::val::array();
+        for (unsigned int i = 0; i < outputs.size(); ++i) {
+            emscripten::val size = emscripten::val::array();
+            for (unsigned int j = 0; j < outputs[i].size(); ++j) {
+                size.call<void>("push", outputs[i][j]);
+            }
+            js_outputs.call<void>("push", size);
+        }
+        emscripten::val js_internals = emscripten::val::array();
+        for (unsigned int i = 0; i < internals.size(); ++i) {
+            emscripten::val size = emscripten::val::array();
+            for (unsigned int j = 0; j < internals[i].size(); ++j) {
+                size.call<void>("push", internals[i][j]);
+            }
+            js_internals.call<void>("push", size);
+        }
+        emscripten::val result = emscripten::val::array();
+        result.call<void>("push", js_outputs);
+        result.call<void>("push", js_internals);
+        return result;
+    }
+
+    void forwardWrapper(Layer& layer, const std::vector<Mat>& inputs, std::vector<Mat>& outputs,  std::vector<Mat>& internals) {
+        layer.forward(inputs, outputs, internals);
+    }
 }
 
 EMSCRIPTEN_BINDINGS(binding_utils)
@@ -336,7 +388,7 @@ EMSCRIPTEN_BINDINGS(binding_utils)
     emscripten::class_<cv::Mat>("Mat")
         .constructor<>()
         .constructor<const Mat&>()
-        .constructor<Size, int>()
+        .constructor<emscripten::val, int>(&binding_utils::createMatBySizes)
         .constructor<int, int, int>()
         .constructor<int, int, int, const Scalar&>()
         .constructor(&binding_utils::createMat, allow_raw_pointers())
@@ -531,15 +583,30 @@ EMSCRIPTEN_BINDINGS(binding_utils)
 
     function("minMaxLoc", select_overload<binding_utils::MinMaxLoc(const cv::Mat&)>(&binding_utils::minMaxLoc_1));
 
-    function("morphologyDefaultBorderValue", &cv::morphologyDefaultBorderValue);
-
     function("CV_MAT_DEPTH", &binding_utils::cvMatDepth);
 
-    function("CamShift", select_overload<emscripten::val(const cv::Mat&, Rect&, TermCriteria)>(&binding_utils::CamShiftWrapper));
-
-    function("meanShift", select_overload<emscripten::val(const cv::Mat&, Rect&, TermCriteria)>(&binding_utils::meanShiftWrapper));
-
     function("getBuildInformation", &binding_utils::getBuildInformation);
+
+    // dnn
+    emscripten::class_<Layer>("Layer")
+        .smart_ptr<Ptr<Layer>>("Ptr<Layer>")
+        .class_function("createInstance", &binding_utils::createLayerInstanceWrapper)
+        .function("getMemoryShapes", &binding_utils::getMemoryShapesWrapper)
+        .function("finalize", select_overload<void(const std::vector<Mat>&, std::vector<Mat>&)>(&Layer::finalize))
+        .function("forward", select_overload<void(Layer&, const std::vector<Mat>&, std::vector<Mat>&,  std::vector<Mat>&)>(&binding_utils::forwardWrapper))
+        ;
+
+    emscripten::class_<LayerParams, base<Dict>>("LayerParams")
+        .constructor<>()
+        .property("blobs", &LayerParams::blobs)
+        ;
+
+    emscripten::class_<Dict>("Dict")
+        .constructor<>()
+        .function("setInt", select_overload<void(Dict&, const std::string&, const int&)>(&binding_utils::dictSet<int>))
+        .function("setDouble", select_overload<void(Dict&, const std::string&, const double&)>(&binding_utils::dictSet<double>))
+        .function("setString", select_overload<void(Dict&, const std::string&, const std::string&)>(&binding_utils::dictSet<std::string>))
+        ;
 
     constant("CV_8UC1", CV_8UC1);
     constant("CV_8UC2", CV_8UC2);

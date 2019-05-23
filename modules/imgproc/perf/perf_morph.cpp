@@ -15,11 +15,11 @@ PERF_TEST_P(Size_MatType, erode, TYPICAL_MATS_MORPH)
 
     Mat src(sz, type);
     Mat dst(sz, type);
+    Mat M = cv::Mat::ones(3, 3, CV_8U);
 
     declare.in(src, WARMUP_RNG).out(dst);
 
-    int runs = (sz.width <= 320) ? 15 : 1;
-    TEST_CYCLE_MULTIRUN(runs) erode(src, dst, noArray());
+    TEST_CYCLE() erode(src, dst, M);
 
     SANITY_CHECK(dst);
 }

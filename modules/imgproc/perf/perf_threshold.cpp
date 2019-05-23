@@ -31,8 +31,7 @@ PERF_TEST_P(Size_MatType_ThreshType, threshold,
 
     declare.in(src, WARMUP_RNG).out(dst);
 
-    int runs = (sz.width <= 640) ? 40 : 1;
-    TEST_CYCLE_MULTIRUN(runs) cv::threshold(src, dst, thresh, maxval, threshType);
+    TEST_CYCLE() cv::threshold(src, dst, thresh, maxval, threshType);
 
     SANITY_CHECK(dst);
 }

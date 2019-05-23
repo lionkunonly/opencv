@@ -47,7 +47,7 @@ PERF_TEST_P(Size_MatType_OutMatDepth, integral_sqsum,
     Mat sqsum(sz, sdepth);
 
     declare.in(src, WARMUP_RNG).out(sum, sqsum);
-    declare.time(100);
+    //declare.time(100);
 
     TEST_CYCLE() integral(src, sum, sqsum, sdepth);
 

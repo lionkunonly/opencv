@@ -322,6 +322,7 @@ PERF_TEST_P(Size_CvtMode, cvtColor8u,
     Mat src(sz, CV_8UC(ch.scn));
     Mat dst(sz, CV_8UC(ch.dcn));
 
+    declare.time(100);
     declare.in(src, WARMUP_RNG).out(dst);
 
     int runs = sz.width <= 320 ? 100 : 5;

@@ -29,7 +29,7 @@ function getMs(hrtime) {
 function printResult(elapsed, perf) {
   console.log(`elapsed time: ${getMs(elapsed)}`);
   console.log(`average time: ${average(perf)}`);
-  console.log(`stddev: ${standardDeviation(perf)}`);
+  console.log(`stddev: ${standardDeviation(perf)} (${(standardDeviation(perf)/average(perf)*100).toFixed(2)}%)`);
 }
 
 const samples = 1000;

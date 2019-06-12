@@ -65,8 +65,6 @@ cv.onRuntimeInitialized = () => {
         sz1080p = new cv.Size(1920, 1080),
         szTemp = new cv.Size(130, 60);
 
-
-
   const CvtMode = [
     "COLOR_BGR2BGR555", "COLOR_BGR2BGR565", "COLOR_BGR2BGRA", "COLOR_BGR2GRAY",
     "COLOR_BGR2HLS", "COLOR_BGR2HLS_FULL", "COLOR_BGR2HSV", "COLOR_BGR2HSV_FULL",
@@ -371,9 +369,9 @@ cv.onRuntimeInitialized = () => {
     });
   }
 
-  function addCvtModeCase(sizes, cvt_mode) {
-    sizes.forEach(size => {
-      cvt_mode.forEach(mode => {
+  function addCvtModeCase(cvt_sizes, cvt_modes) {
+    cvt_sizes.forEach(size => {
+      cvt_modes.forEach(mode => {
         let ChPair = getConversionInfo(mode);
         let mat_type = getMatType(ChPair);
         Params.push([size.width, size.height, mode]);
@@ -384,9 +382,9 @@ cv.onRuntimeInitialized = () => {
     });
   }
 
-  function addCvtModeBayerCase(sizes, cvt_mode) {
-    sizes.forEach(size => {
-      cvt_mode.forEach(mode => {
+  function addCvtModeBayerCase(cvt_sizes, cvt_modes) {
+    cvt_sizes.forEach(size => {
+      cvt_modes.forEach(mode => {
         let ChPair = getConversionInfo(mode);
         let mat_type = getMatType(ChPair);
         Params.push([size.width, size.height, mode]);
@@ -397,9 +395,9 @@ cv.onRuntimeInitialized = () => {
     });
   }
 
-  function addCvtMode2Case(sizes, cvt_mode) {
-    sizes.forEach(size => {
-      cvt_mode.forEach(mode => {
+  function addCvtMode2Case(cvt_sizes, cvt_modes) {
+    cvt_sizes.forEach(size => {
+      cvt_modes.forEach(mode => {
         let ChPair = getConversionInfo(mode);
         let mat_type = getMatType(ChPair);
         Params.push([size.width, size.height, mode]);
@@ -410,9 +408,9 @@ cv.onRuntimeInitialized = () => {
     });
   }
 
-  function addCvtMode3Case(sizes, cvt_mode) {
-    sizes.forEach(size => {
-      cvt_mode.forEach(mode => {
+  function addCvtMode3Case(cvt_sizes, cvt_modes) {
+    cvt_sizes.forEach(size => {
+      cvt_modes.forEach(mode => {
         let ChPair = getConversionInfo(mode);
         let mat_type = getMatType(ChPair);
         Params.push([size.width, size.height, mode]);
@@ -423,9 +421,9 @@ cv.onRuntimeInitialized = () => {
     });
   }
 
-  function addEdgeAwareBayerModeCase(sizes, cvt_mode) {
-    sizes.forEach(size => {
-      cvt_mode.forEach(mode => {
+  function addEdgeAwareBayerModeCase(cvt_sizes, cvt_modes) {
+    cvt_sizes.forEach(size => {
+      cvt_modes.forEach(mode => {
         let ChPair = getConversionInfo(mode);
         let mat_type = getMatType(ChPair);
         Params.push([size.width, size.height, mode]);
@@ -437,20 +435,50 @@ cv.onRuntimeInitialized = () => {
   }
 
 
-  let sizes = [CvtModeSize, CvtModeBayerSize, CvtMode2Size, CvtMode3Size]//, EdgeAwareBayerModeSize];
-  let cvt_mode = [CvtMode, CvtModeBayer, CvtMode2, CvtMode3]//, EdgeAwareBayerMode];
+  // init
+  let cvt_sizes = [CvtModeSize, CvtModeBayerSize, CvtMode2Size, CvtMode3Size];//, EdgeAwareBayerModeSize];
+  let cvt_modes = [CvtMode, CvtModeBayer, CvtMode2, CvtMode3];//, EdgeAwareBayerMode];
+  let cvt_functions = [addCvtModeCase, addCvtModeBayerCase, addCvtMode2Case, addCvtMode3Case];//, addEdgeAwareBayerModeCase];
+
+  // Flags
+  // set test filter params
+  const args = process.argv.slice(2);
   let totalTestNum = 0;
-  for (let i = 0; i < cvt_mode.length; ++i) {
-    totalTestNum += (cvt_mode[i].length*sizes[i].length);
+  if (args.toString().match(/--test_param_filter/)) {
+    if (/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+\)/g.test(args.toString())) {
+      let param = args.toString().match(/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
+      console.log(param);
+      let sizeString = param.match(/[0-9]+/g).slice(0, 2).toString();
+      let cvMode = (param.match(/CX\_[A-z]+2[A-z]+/) || param.match(/COLOR\_[A-z]+2[A-z]+/)).toString();
+      let cvSize;
+      switch(sizeString){
+        case "127,61": cvSize = szODD;break;
+        case "640,480": cvSize = szVGA;break;
+        case "1280,720": cvSize = sz720p;break;
+        case "1920,1080": cvSize = sz1080p;break;
+        case "130,60": cvSize = szTemp;break;
+      }
+
+      // check if the params match and add case
+      for (let i = 0; i < cvt_modes.length; ++i) {
+        if (cvt_modes[i].indexOf(cvMode) !== -1 && cvt_sizes[i].indexOf(cvSize) !== -1) {
+          cvt_functions[i]([cvSize], [cvMode]);
+          ++totalTestNum;
+        }
+      }
+    }
+  } else {
+    // no filter, test all the cases
+    addCvtModeCase(CvtModeSize, CvtMode);
+    addCvtModeBayerCase(CvtModeBayerSize, CvtModeBayer);
+    addCvtMode2Case(CvtMode2Size, CvtMode2);
+    addCvtMode3Case(CvtMode3Size, CvtMode3);
+    for (let i = 0; i < cvt_modes.length; ++i) {
+      totalTestNum += (cvt_modes[i].length*cvt_sizes[i].length);
+    }
   }
 
-  console.log(`Running ${totalTestNum} tests from CvtColor`);
-  addCvtModeCase(CvtModeSize, CvtMode);
-  addCvtModeBayerCase(CvtModeBayerSize, CvtModeBayer);
-  addCvtMode2Case(CvtMode2Size, CvtMode2);
-  addCvtMode3Case(CvtMode3Size, CvtMode3);
-  
-  
+  console.log(`Running ${totalTestNum} tests from CvtColor`);  
   suite
     // add listeners
     .on('cycle', function(event) {

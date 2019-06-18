@@ -2,8 +2,8 @@
 // `npm i --save benchmark`
 
 var Benchmark = require('benchmark');
-var cv = require('../opencv.js');
-var help_func = require('../perf_helpfunction');
+var cv = require('../../opencv');
+var help_func = require('../perf_helpfunc');
 
 cv.onRuntimeInitialized = () => {
   console.log('opencv.js loaded');
@@ -13,20 +13,42 @@ cv.onRuntimeInitialized = () => {
   global.help_func = help_func;
   global.Params = [];
   let totalTestNum = 0;
+  require('../base');  // need global cv
 
-  const szODD = new cv.Size(127, 61),
-        szVGA = new cv.Size(640, 480),
-        sz720p = new cv.Size(1280, 720);
-        sz1080p = new cv.Size(1920, 1080),
-        szTemp = new cv.Size(130, 60);
-        szqHD = new cv.Size(960, 540);
-        szQVGA = new cv.Size(320, 240);
+  const matTypesUpLinear = ['CV_8UC1', 'CV_8UC2', 'CV_8UC3', 'CV_8UC4'];
+  const size1UpLinear = [cvSize.szVGA];
+  const size2UpLinear = [cvSize.szqHD, cvSize.sz720p];
+  const combiUpLinear = help_func.combine(matTypesUpLinear, size1UpLinear, size2UpLinear);
 
-  function addResizeUpLinearCase() {
-    let matTypes = ['CV_8UC1', 'CV_8UC2', 'CV_8UC3', 'CV_8UC4'];
-    let size1 = [szVGA];
-    let size2 = [szqHD, sz720p];
-    let combination = help_func.combine(matTypes, size1, size2);
+  const combiDownLinear = [
+    ['CV_8UC1', cvSize.szVGA, cvSize.szQVGA],
+    ['CV_8UC2', cvSize.szVGA, cvSize.szQVGA],
+    ['CV_8UC3', cvSize.szVGA, cvSize.szQVGA],
+    ['CV_8UC4', cvSize.szVGA, cvSize.szQVGA],
+    ['CV_8UC1', cvSize.szqHD, cvSize.szVGA],
+    ['CV_8UC2', cvSize.szqHD, cvSize.szVGA],
+    ['CV_8UC3', cvSize.szqHD, cvSize.szVGA],
+    ['CV_8UC4', cvSize.szqHD, cvSize.szVGA],
+    ['CV_8UC1', cvSize.sz720p, cvSize.sz213x120],// face detection min_face_size = 20%
+    ['CV_8UC2', cvSize.sz720p, cvSize.sz213x120],// face detection min_face_size = 20%
+    ['CV_8UC3', cvSize.sz720p, cvSize.sz213x120],// face detection min_face_size = 20%
+    ['CV_8UC4', cvSize.sz720p, cvSize.sz213x120],// face detection min_face_size = 20%
+    ['CV_8UC1', cvSize.sz720p, cvSize.szVGA],
+    ['CV_8UC2', cvSize.sz720p, cvSize.szVGA],
+    ['CV_8UC3', cvSize.sz720p, cvSize.szVGA],
+    ['CV_8UC4', cvSize.sz720p, cvSize.szVGA],
+    ['CV_8UC1', cvSize.sz720p, cvSize.szQVGA],
+    ['CV_8UC2', cvSize.sz720p, cvSize.szQVGA],
+    ['CV_8UC3', cvSize.sz720p, cvSize.szQVGA],
+    ['CV_8UC4', cvSize.sz720p, cvSize.szQVGA]
+  ];
+
+  const matTypesAreaFast = ['CV_8UC1', 'CV_8UC3', 'CV_8UC4', 'CV_16UC1', 'CV_16UC3', 'CV_16UC4'];
+  const sizesAreaFast = [cvSize.szVGA, cvSize.szqHD, cvSize.sz720p, cvSize.sz1080p];
+  const scalesAreaFast = [2];
+  const combiAreaFast = help_func.combine(matTypesAreaFast, sizesAreaFast, scalesAreaFast);
+
+  function addResizeUpLinearCase(combination) {
     totalTestNum += combination.length;
     for (let i = 0; i < combination.length; ++i) {
       let mat_type = combination[i][0];
@@ -61,30 +83,7 @@ cv.onRuntimeInitialized = () => {
     }
   }
 
-  function addResizeDownLinearCase() {
-    let tmpSize = new cv.Size(120 * sz720p.width / sz720p.height, 120);
-    let combination = [
-                ['CV_8UC1', szVGA, szQVGA],
-                ['CV_8UC2', szVGA, szQVGA],
-                ['CV_8UC3', szVGA, szQVGA],
-                ['CV_8UC4', szVGA, szQVGA],
-                ['CV_8UC1', szqHD, szVGA],
-                ['CV_8UC2', szqHD, szVGA],
-                ['CV_8UC3', szqHD, szVGA],
-                ['CV_8UC4', szqHD, szVGA],
-                ['CV_8UC1', sz720p, tmpSize],//face detection min_face_size = 20%
-                ['CV_8UC2', sz720p, tmpSize],//face detection min_face_size = 20%
-                ['CV_8UC3', sz720p, tmpSize],//face detection min_face_size = 20%
-                ['CV_8UC4', sz720p, tmpSize],//face detection min_face_size = 20%
-                ['CV_8UC1', sz720p, szVGA],
-                ['CV_8UC2', sz720p, szVGA],
-                ['CV_8UC3', sz720p, szVGA],
-                ['CV_8UC4', sz720p, szVGA],
-                ['CV_8UC1', sz720p, szQVGA],
-                ['CV_8UC2', sz720p, szQVGA],
-                ['CV_8UC3', sz720p, szQVGA],
-                ['CV_8UC4', sz720p, szQVGA]
-    ];
+  function addResizeDownLinearCase(combination) {
     totalTestNum += combination.length;
     for (let i = 0; i < combination.length; ++i) {
       let mat_type = combination[i][0];
@@ -119,11 +118,7 @@ cv.onRuntimeInitialized = () => {
     }
   }
 
-  function addResizeAreaFastCase() {
-    let matTypes = ['CV_8UC1', 'CV_8UC3', 'CV_8UC4', 'CV_16UC1', 'CV_16UC3', 'CV_16UC4'];
-    let sizes = [szVGA, szqHD, sz720p, sz1080p];
-    let scales = [2];
-    let combination = help_func.combine(matTypes, sizes, scales);
+  function addResizeAreaFastCase(combination) {
     totalTestNum += combination.length;
     for (let i = 0; i < combination.length; ++i) {
       let mat_type = combination[i][0];
@@ -161,6 +156,10 @@ cv.onRuntimeInitialized = () => {
     }
   }
 
+  // init
+  let resize_func = [addResizeUpLinearCase, addResizeDownLinearCase];//, addResizeAreaFastCase];
+  let combinations = [combiUpLinear, combiDownLinear];//, combiAreaFast];
+
   // Flags
   // set test filter params
   const args = process.argv.slice(2);
@@ -168,14 +167,26 @@ cv.onRuntimeInitialized = () => {
     if (/--test_param_filter=\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g.test(args.toString())) {
       let param = args.toString().match(/--test_param_filter=\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g)[0];
       let sizeString = param.match(/[0-9]+x[0-9]+/g).slice(0, 2).toString();
-      let sizes = sizeString.match(/[0-9]+/g).toString();
+      let sizes = sizeString.match(/[0-9]+/g);
+      let size1Str = sizes.slice(0, 2).toString();
+      let size2Str = sizes.slice(2, 5).toString();
       let mat_type = param.match(/CV\_[0-9]+[A-z][A-z][0-9]/).toString();
+      let size1 = help_func.cvtStr2cvSize(size1Str);
+      let size2 = help_func.cvtStr2cvSize(size2Str);
+      // check if the params match and add case
+      for (let i = 0; i < combinations.length; ++i) {
+        let combination = combinations[i];
+        for (let j = 0; j < combination.length; ++j) {
+          if (mat_type === combination[j][0] && size1 === combination[j][1] && size2 === combination[j][2]) {
+            resize_func[i]([combination[j]]);
+          }
+        }
+      }
     }
   } else {
     // no filter, test all the cases
-    addResizeUpLinearCase();
-    addResizeDownLinearCase();
-    addResizeAreaFastCase();
+    addResizeUpLinearCase(combiUpLinear);
+    addResizeDownLinearCase(combiDownLinear);
   }
 
   console.log(`Running ${totalTestNum} tests from Resize`); 
@@ -184,13 +195,17 @@ cv.onRuntimeInitialized = () => {
     .on('cycle', function(event) {
       console.log(`=== ${event.target.name} ${event.target.id} ===`);
       let index = event.target.id-1;
-      console.log(`Params: (${Params[index][0]}, ${Params[index][1].width}x${Params[index][1].height}, ${Params[index][2].width}x${Params[index][2].height})`);
+      let mat_type = Params[index][0];
+      let size1 = Params[index][1];
+      let size2 = Params[index][2];
+      console.log(`Params: (${mat_type}, ${parseInt(size1.width)}x${parseInt(size1.height)},`+
+                  `${parseInt(size2.width)}x${parseInt(size2.height)})`);
       console.log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
       console.log('mean time:' +String(event.target.stats.mean*1000)+' ms');
       console.log('stddev time:' +String(event.target.stats.deviation*1000)+' ms');
       console.log(String(event.target));
     })
-    .on('error', function(event) { console.log(event); })
+    .on('error', function(event) { console.log(`test case ${event.target.name} failed`); })
     .on('complete', function(event) {
       console.log(``);
       console.log(`###################################`)

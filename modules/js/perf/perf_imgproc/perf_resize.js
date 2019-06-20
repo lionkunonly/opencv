@@ -1,24 +1,21 @@
-// you may need install benchmark with npm by 
-// `npm i --save benchmark`
-
 var Benchmark = require('benchmark');
 var cv = require('../../opencv');
-var help_func = require('../perf_helpfunc');
+var HelpFunc = require('../perf_helpfunc');
+var Base = require('../base');
 
 cv.onRuntimeInitialized = () => {
   console.log('opencv.js loaded');
-  // Benchmark.options.minSamples = 50;     // set the minimum of Samples for each case
-  var suite = new Benchmark.Suite;
+  let suite = new Benchmark.Suite;
   global.cv = cv;
-  global.help_func = help_func;
-  global.Params = [];
+  global.HelpFunc = HelpFunc;
+  global.params = [];
   let totalTestNum = 0;
-  require('../base');  // need global cv
+  const cvSize = Base.cvSize;
 
   const matTypesUpLinear = ['CV_8UC1', 'CV_8UC2', 'CV_8UC3', 'CV_8UC4'];
   const size1UpLinear = [cvSize.szVGA];
   const size2UpLinear = [cvSize.szqHD, cvSize.sz720p];
-  const combiUpLinear = help_func.combine(matTypesUpLinear, size1UpLinear, size2UpLinear);
+  const combiUpLinear = HelpFunc.combine(matTypesUpLinear, size1UpLinear, size2UpLinear);
 
   const combiDownLinear = [
     ['CV_8UC1', cvSize.szVGA, cvSize.szQVGA],
@@ -46,15 +43,15 @@ cv.onRuntimeInitialized = () => {
   const matTypesAreaFast = ['CV_8UC1', 'CV_8UC3', 'CV_8UC4', 'CV_16UC1', 'CV_16UC3', 'CV_16UC4'];
   const sizesAreaFast = [cvSize.szVGA, cvSize.szqHD, cvSize.sz720p, cvSize.sz1080p];
   const scalesAreaFast = [2];
-  const combiAreaFast = help_func.combine(matTypesAreaFast, sizesAreaFast, scalesAreaFast);
+  const combiAreaFast = HelpFunc.combine(matTypesAreaFast, sizesAreaFast, scalesAreaFast);
 
   function addResizeUpLinearCase(combination) {
     totalTestNum += combination.length;
     for (let i = 0; i < combination.length; ++i) {
-      let mat_type = combination[i][0];
+      let matType = combination[i][0];
       let from = combination[i][1];
       let to = combination[i][2];
-      Params.push([mat_type, from, to]);
+      params.push([matType, from, to]);
 
       suite.add('resize', function() {
         cv.resize(src, dst, this.param.to, 0, 0, cv.INTER_LINEAR_EXACT);
@@ -62,10 +59,10 @@ cv.onRuntimeInitialized = () => {
           'setup': function() {
             let from = this.param.from;
             let to = this.param.to;
-            let mat_type = this.param.mat_type;
-            let src = new cv.Mat(from, mat_type);
-            let dst = new cv.Mat(to, mat_type);
-            help_func.fillGradient(cv, src);
+            let matType = this.param.matType;
+            let src = new cv.Mat(from, matType);
+            let dst = new cv.Mat(to, matType);
+            HelpFunc.fillGradient(cv, src);
               },
           'teardown': function() {
             src.delete();
@@ -78,7 +75,7 @@ cv.onRuntimeInitialized = () => {
       suite[index].param = {
         from: from,
         to: to,
-        mat_type: cv[mat_type]
+        matType: cv[matType]
       };
     }
   }
@@ -86,10 +83,10 @@ cv.onRuntimeInitialized = () => {
   function addResizeDownLinearCase(combination) {
     totalTestNum += combination.length;
     for (let i = 0; i < combination.length; ++i) {
-      let mat_type = combination[i][0];
+      let matType = combination[i][0];
       let from = combination[i][1];
       let to = combination[i][2];
-      Params.push([mat_type, from, to]);
+      params.push([matType, from, to]);
 
       suite.add('resize', function() {
         cv.resize(src, dst, to, 0, 0, cv.INTER_LINEAR_EXACT);
@@ -97,10 +94,10 @@ cv.onRuntimeInitialized = () => {
           'setup': function() {
             let from = this.param.from;
             let to = this.param.to;
-            let mat_type = this.param.mat_type;
-            let src = new cv.Mat(from, mat_type);
-            let dst = new cv.Mat(to, mat_type);
-            help_func.fillGradient(cv, src);
+            let matType = this.param.matType;
+            let src = new cv.Mat(from, matType);
+            let dst = new cv.Mat(to, matType);
+            HelpFunc.fillGradient(cv, src);
               },
           'teardown': function() {
             src.delete();
@@ -113,7 +110,7 @@ cv.onRuntimeInitialized = () => {
       suite[index].param = {
         from: from,
         to: to,
-        mat_type: cv[mat_type]
+        matType: cv[matType]
       };
     }
   }
@@ -121,7 +118,7 @@ cv.onRuntimeInitialized = () => {
   function addResizeAreaFastCase(combination) {
     totalTestNum += combination.length;
     for (let i = 0; i < combination.length; ++i) {
-      let mat_type = combination[i][0];
+      let matType = combination[i][0];
       let from = combination[i][1];
       let scale = combination[i][2];
       from.width = (Math.floor(from.width/scale))*scale;
@@ -129,7 +126,7 @@ cv.onRuntimeInitialized = () => {
       let to = {
         width: from.width/scale, 
         height: from.height/scale};  // for param print
-      Params.push([mat_type, from, to]);
+      params.push([matType, from, to]);
 
       suite.add('resize', function() {
         cv.resize(src, dst, dst.size(), 0, 0, cv.INTER_AREA);
@@ -137,9 +134,9 @@ cv.onRuntimeInitialized = () => {
           'setup': function() {
             let from = this.param.from;
             let scale = this.param.scale;
-            let mat_type = this.param.mat_type;
-            let src = new cv.Mat(from, mat_type);
-            let dst = new cv.Mat(from.height/scale, from.width/scale, mat_type);
+            let matType = this.param.matType;
+            let src = new cv.Mat(from, matType);
+            let dst = new cv.Mat(from.height/scale, from.width/scale, matType);
               },
           'teardown': function() {
             src.delete();
@@ -151,13 +148,13 @@ cv.onRuntimeInitialized = () => {
       suite[index].param = {
         from: from,
         scale: scale,
-        mat_type: cv[mat_type]
+        matType: cv[matType]
       };
     }
   }
 
   // init
-  let resize_func = [addResizeUpLinearCase, addResizeDownLinearCase];//, addResizeAreaFastCase];
+  let resizeFunc = [addResizeUpLinearCase, addResizeDownLinearCase];//, addResizeAreaFastCase];
   let combinations = [combiUpLinear, combiDownLinear];//, combiAreaFast];
 
   // Flags
@@ -170,15 +167,15 @@ cv.onRuntimeInitialized = () => {
       let sizes = sizeString.match(/[0-9]+/g);
       let size1Str = sizes.slice(0, 2).toString();
       let size2Str = sizes.slice(2, 5).toString();
-      let mat_type = param.match(/CV\_[0-9]+[A-z][A-z][0-9]/).toString();
-      let size1 = help_func.cvtStr2cvSize(size1Str);
-      let size2 = help_func.cvtStr2cvSize(size2Str);
+      let matType = param.match(/CV\_[0-9]+[A-z][A-z][0-9]/).toString();
+      let size1 = HelpFunc.cvtStr2cvSize(size1Str);
+      let size2 = HelpFunc.cvtStr2cvSize(size2Str);
       // check if the params match and add case
       for (let i = 0; i < combinations.length; ++i) {
         let combination = combinations[i];
         for (let j = 0; j < combination.length; ++j) {
-          if (mat_type === combination[j][0] && size1 === combination[j][1] && size2 === combination[j][2]) {
-            resize_func[i]([combination[j]]);
+          if (matType === combination[j][0] && size1 === combination[j][1] && size2 === combination[j][2]) {
+            resizeFunc[i]([combination[j]]);
           }
         }
       }
@@ -189,16 +186,16 @@ cv.onRuntimeInitialized = () => {
     addResizeDownLinearCase(combiDownLinear);
   }
 
-  console.log(`Running ${totalTestNum} tests from Resize`); 
+  console.log(`Running ${totalTestNum} tests from Resize`);
   suite
     // add listeners
     .on('cycle', function(event) {
       console.log(`=== ${event.target.name} ${event.target.id} ===`);
       let index = event.target.id-1;
-      let mat_type = Params[index][0];
-      let size1 = Params[index][1];
-      let size2 = Params[index][2];
-      console.log(`Params: (${mat_type}, ${parseInt(size1.width)}x${parseInt(size1.height)},`+
+      let matType = params[index][0];
+      let size1 = params[index][1];
+      let size2 = params[index][2];
+      console.log(`params: (${matType},${parseInt(size1.width)}x${parseInt(size1.height)},`+
                   `${parseInt(size2.width)}x${parseInt(size2.height)})`);
       console.log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
       console.log('mean time:' +String(event.target.stats.mean*1000)+' ms');

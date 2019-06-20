@@ -1,4 +1,5 @@
-global.cvSize = {
+const cv = require('../opencv');
+exports.cvSize = {
   szODD: new cv.Size(127, 61),
   szQVGA: new cv.Size(320, 240),
   szVGA: new cv.Size(640, 480),

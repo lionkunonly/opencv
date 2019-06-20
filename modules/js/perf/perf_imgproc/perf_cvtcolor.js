@@ -1,19 +1,16 @@
-// you may need install benchmark with npm by 
-// `npm i --save benchmark`
-
-let Benchmark = require('benchmark');
-let cv = require('../../opencv');
-let help_func = require('../perf_helpfunc');
+var Benchmark = require('benchmark');
+var cv = require('../../opencv');
+var HelpFunc = require('../perf_helpfunc');
+var Base = require('../base');
 
 cv.onRuntimeInitialized = () => {
   console.log('opencv.js loaded');
-  // Benchmark.options.minSamples = 50;     // set the minimum of Samples for each case
   let suite = new Benchmark.Suite;
   global.cv = cv;
-  global.help_func = help_func;
-  global.Params = [];
+  global.HelpFunc = HelpFunc;
+  global.params = [];
   let totalTestNum = 0;
-  require('../base');  // need global cv
+  const cvSize = Base.cvSize;
 
   //extra color conversions supported implicitly
   {
@@ -109,7 +106,7 @@ cv.onRuntimeInitialized = () => {
     "COLOR_YUV2BGR", "COLOR_YUV2RGB", "CX_YUV2BGRA", "CX_YUV2RGBA"
   ];
   const CvtModeSize = [cvSize.szODD, cvSize.szVGA, cvSize.sz1080p];
-  const combiCvtMode = help_func.combine(CvtModeSize, CvtMode);
+  const combiCvtMode = HelpFunc.combine(CvtModeSize, CvtMode);
 
   // didn't support 16u and 32f perf tests according to 
   // https://github.com/opencv/opencv/commit/4e679e1cc5b075ec006b29a58b4fe117523fba1d
@@ -137,7 +134,7 @@ cv.onRuntimeInitialized = () => {
     "COLOR_YUV2BGR", "COLOR_YUV2RGB", "CX_YUV2BGRA", "CX_YUV2RGBA"
   ];
   const CvtMode16USize = [cvSize.szODD, cvSize.szVGA, cvSize.sz1080p];
-  const combiCvtMode16U = help_func.combine(CvtMode16USize, CvtMode16U);
+  const combiCvtMode16U = HelpFunc.combine(CvtMode16USize, CvtMode16U);
 
   const CvtMode32F = [
     "COLOR_BGR2BGRA", "COLOR_BGR2GRAY",
@@ -182,7 +179,7 @@ cv.onRuntimeInitialized = () => {
     "COLOR_YUV2BGR", "COLOR_YUV2RGB", "CX_YUV2BGRA", "CX_YUV2RGBA"
   ];
   const CvtMode32FSize = [cvSize.szODD, cvSize.szVGA, cvSize.sz1080p];
-  const combiCvtMode32F = help_func.combine(CvtMode32FSize, CvtMode32F);
+  const combiCvtMode32F = HelpFunc.combine(CvtMode32FSize, CvtMode32F);
 
   const CvtModeBayer = [
     "COLOR_BayerBG2BGR", "COLOR_BayerBG2BGRA", "COLOR_BayerBG2BGR_VNG", "COLOR_BayerBG2GRAY",
@@ -191,7 +188,7 @@ cv.onRuntimeInitialized = () => {
     "COLOR_BayerRG2BGR", "COLOR_BayerRG2BGRA", "COLOR_BayerRG2BGR_VNG", "COLOR_BayerRG2GRAY"
   ];
   const CvtModeBayerSize = [cvSize.szODD, cvSize.szVGA];
-  const combiCvtModeBayer = help_func.combine(CvtModeBayerSize, CvtModeBayer);
+  const combiCvtModeBayer = HelpFunc.combine(CvtModeBayerSize, CvtModeBayer);
 
 
   const CvtMode2 = [
@@ -201,20 +198,20 @@ cv.onRuntimeInitialized = () => {
     "COLOR_YUV2BGR_YVYU", "COLOR_YUV2RGBA_YUY2", "COLOR_YUV2BGRA_YUY2", "COLOR_YUV2RGBA_YVYU", "COLOR_YUV2BGRA_YVYU"
   ];
   const CvtMode2Size = [cvSize.szVGA, cvSize.sz1080p, cvSize.sz130x60];
-  const combiCvtMode2 = help_func.combine(CvtMode2Size, CvtMode2);
+  const combiCvtMode2 = HelpFunc.combine(CvtMode2Size, CvtMode2);
 
   const CvtMode3 = [ 
     "COLOR_RGB2YUV_IYUV", "COLOR_BGR2YUV_IYUV", "COLOR_RGBA2YUV_IYUV", "COLOR_BGRA2YUV_IYUV",
     "COLOR_RGB2YUV_YV12", "COLOR_BGR2YUV_YV12", "COLOR_RGBA2YUV_YV12", "COLOR_BGRA2YUV_YV12"
   ];
   const CvtMode3Size = [cvSize.szVGA, cvSize.sz720p, cvSize.sz1080p, cvSize.sz130x60];
-  const combiCvtMode3 = help_func.combine(CvtMode3Size, CvtMode3);
+  const combiCvtMode3 = HelpFunc.combine(CvtMode3Size, CvtMode3);
 
   const EdgeAwareBayerMode = [
     "COLOR_BayerBG2BGR_EA", "COLOR_BayerGB2BGR_EA", "COLOR_BayerRG2BGR_EA", "COLOR_BayerGR2BGR_EA"
   ];
   const EdgeAwareBayerModeSize = [cvSize.szVGA, cvSize.sz720p, cvSize.sz1080p, cvSize.sz130x60];
-  const combiEdgeAwareBayer = help_func.combine(EdgeAwareBayerModeSize, EdgeAwareBayerMode);
+  const combiEdgeAwareBayer = HelpFunc.combine(EdgeAwareBayerModeSize, EdgeAwareBayerMode);
   
   function getConversionInfo(cvtMode)
   {
@@ -332,38 +329,38 @@ cv.onRuntimeInitialized = () => {
       return [0, 0];
   }
 
-  function getMatType(ChPair) {
-    switch (ChPair[0])
+  function getMatType(chPair) {
+    switch (chPair[0])
       {
-        case 0: mat1_type = cv.CV_8UC;break;
-        case 1: mat1_type = cv.CV_8UC1;break;
-        case 2: mat1_type = cv.CV_8UC2;break;
-        case 3: mat1_type = cv.CV_8UC3;break;
-        case 4: mat1_type = cv.CV_8UC3;break;
-        default: mat1_type = cv.CV_8UC;break;
+        case 0: mat1Type = cv.CV_8UC;break;
+        case 1: mat1Type = cv.CV_8UC1;break;
+        case 2: mat1Type = cv.CV_8UC2;break;
+        case 3: mat1Type = cv.CV_8UC3;break;
+        case 4: mat1Type = cv.CV_8UC3;break;
+        default: mat1Type = cv.CV_8UC;break;
       }
-    switch (ChPair[1])
+    switch (chPair[1])
       {
-        case 0: mat2_type = cv.CV_8UC;break;
-        case 1: mat2_type = cv.CV_8UC1;break;
-        case 2: mat2_type = cv.CV_8UC2;break;
-        case 3: mat2_type = cv.CV_8UC3;break;
-        case 4: mat2_type = cv.CV_8UC3;break;
-        default: mat2_type = cv.CV_8UC;break;
+        case 0: mat2Type = cv.CV_8UC;break;
+        case 1: mat2Type = cv.CV_8UC1;break;
+        case 2: mat2Type = cv.CV_8UC2;break;
+        case 3: mat2Type = cv.CV_8UC3;break;
+        case 4: mat2Type = cv.CV_8UC3;break;
+        default: mat2Type = cv.CV_8UC;break;
       }
-    return [mat1_type, mat2_type];
+    return [mat1Type, mat2Type];
   }
 
-  function addCvtColorCase(mat_type, size, mode) {
+  function addCvtColorCase(matType, size, mode) {
     suite.add('cvtColor', function() {
       cv.cvtColor(mat1, mat2, mode, 0);
       }, {
         'setup': function() {
           let size = this.param.size;
-          let mat_type = this.param.mat_type;
+          let matType = this.param.matType;
           let mode = this.param.mode;
-          let mat1 = new cv.Mat(size[1], size[0], mat_type[0]);
-          let mat2 = new cv.Mat(size[1], size[0], mat_type[1]);
+          let mat1 = new cv.Mat(size[1], size[0], matType[0]);
+          let mat2 = new cv.Mat(size[1], size[0], matType[1]);
             },
         'teardown': function() {
           mat1.delete();
@@ -377,17 +374,17 @@ cv.onRuntimeInitialized = () => {
     for(let i = 0; i < combination.length; ++i) {
       let size = combination[i][0];
       let mode = combination[i][1];
-      let ChPair = getConversionInfo(mode);
-      let mat_type = getMatType(ChPair);
-      Params.push([size.width, size.height, mode]);
-      let size_array = [size.width, size.height];
+      let chPair = getConversionInfo(mode);
+      let matType = getMatType(chPair);
+      params.push([size.width, size.height, mode]);
+      let sizeArray = [size.width, size.height];
 
       addCvtColorCase();
       // set init params
       let index = suite.length - 1;
       suite[index].param = {
-        size: size_array,
-        mat_type: mat_type,
+        size: sizeArray,
+        matType: matType,
         mode: cv[mode]%cv.COLOR_COLORCVT_MAX
       };
     };
@@ -398,17 +395,17 @@ cv.onRuntimeInitialized = () => {
     for(let i = 0; i < combination.length; ++i) {
       let size = combination[i][0];
       let mode = combination[i][1];
-      let ChPair = getConversionInfo(mode);
-      let mat_type = getMatType(ChPair);
-      Params.push([size.width, size.height, mode]);
-      let size_array = [size.width, size.height];
+      let chPair = getConversionInfo(mode);
+      let matType = getMatType(chPair);
+      params.push([size.width, size.height, mode]);
+      let sizeArray = [size.width, size.height];
 
       addCvtColorCase();
       // set init params
       let index = suite.length - 1;
       suite[index].param = {
-        size: size_array,
-        mat_type: mat_type,
+        size: sizeArray,
+        matType: matType,
         mode: cv[mode]%cv.COLOR_COLORCVT_MAX
       };
     };
@@ -419,17 +416,17 @@ cv.onRuntimeInitialized = () => {
     for(let i = 0; i < combination.length; ++i) {
       let size = combination[i][0];
       let mode = combination[i][1];
-      let ChPair = getConversionInfo(mode);
-      let mat_type = getMatType(ChPair);
-      Params.push([size.width, size.height, mode]);
-      let size_array = [size.width, size.height+size.height/2];
+      let chPair = getConversionInfo(mode);
+      let matType = getMatType(chPair);
+      params.push([size.width, size.height, mode]);
+      let sizeArray = [size.width, size.height+size.height/2];
 
       addCvtColorCase();
       // set init params
       let index = suite.length - 1;
       suite[index].param = {
-        size: size_array,
-        mat_type: mat_type,
+        size: sizeArray,
+        matType: matType,
         mode: cv[mode]%cv.COLOR_COLORCVT_MAX
       };
     };
@@ -440,17 +437,17 @@ cv.onRuntimeInitialized = () => {
     for(let i = 0; i < combination.length; ++i) {
       let size = combination[i][0];
       let mode = combination[i][1];
-      let ChPair = getConversionInfo(mode);
-      let mat_type = getMatType(ChPair);
-      Params.push([size.width, size.height, mode]);
-      let size_array = [size.width, size.height+size.height/2];
+      let chPair = getConversionInfo(mode);
+      let matType = getMatType(chPair);
+      params.push([size.width, size.height, mode]);
+      let sizeArray = [size.width, size.height+size.height/2];
 
       addCvtColorCase();
       // set init params
       let index = suite.length - 1;
       suite[index].param = {
-        size: size_array,
-        mat_type: mat_type,
+        size: sizeArray,
+        matType: matType,
         mode: cv[mode]%cv.COLOR_COLORCVT_MAX
       };
     };
@@ -461,17 +458,17 @@ cv.onRuntimeInitialized = () => {
     for(let i = 0; i < combination.length; ++i) {
       let size = combination[i][0];
       let mode = combination[i][1];
-      let ChPair = getConversionInfo(mode);
-      let mat_type = getMatType(ChPair);
-      Params.push([size.width, size.height, mode]);
-      let size_array = [size.width, size.height];
+      let chPair = getConversionInfo(mode);
+      let matType = getMatType(chPair);
+      params.push([size.width, size.height, mode]);
+      let sizeArray = [size.width, size.height];
 
       addCvtColorCase();
       // set init params
       let index = suite.length - 1;
       suite[index].param = {
-        size: size_array,
-        mat_type: mat_type,
+        size: sizeArray,
+        matType: matType,
         mode: cv[mode]%cv.COLOR_COLORCVT_MAX
       };
     };
@@ -479,7 +476,7 @@ cv.onRuntimeInitialized = () => {
 
 
   // init
-  let cvt_func = [addCvtModeCase, addCvtModeBayerCase, addCvtMode2Case, addCvtMode3Case];//, addEdgeAwareBayerModeCase];
+  let cvtFunc = [addCvtModeCase, addCvtModeBayerCase, addCvtMode2Case, addCvtMode3Case];//, addEdgeAwareBayerModeCase];
   let combinations = [combiCvtMode, combiCvtModeBayer, combiCvtMode2, combiCvtMode3];//, combiEdgeAwareBayer];
 
   // Flags
@@ -490,14 +487,14 @@ cv.onRuntimeInitialized = () => {
       let param = args.toString().match(/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
       let sizeStr = param.match(/[0-9]+/g).slice(0, 2).toString();
       let mode = (param.match(/CX\_[A-z]+2[A-z]+/) || param.match(/COLOR\_[A-z]+2[A-z]+/)).toString();
-      let size = help_func.cvtStr2cvSize(sizeStr);
+      let size = HelpFunc.cvtStr2cvSize(sizeStr);
 
       // check if the params match and add case
       for (let i = 0; i < combinations.length; ++i) {
         let combination = combinations[i];
         for (let j = 0; j < combination.length; ++j) {
           if (size === combination[j][0] && mode === combination[j][1]) {
-            cvt_func[i]([combination[j]]);
+            cvtFunc[i]([combination[j]]);
           }
         }
       }
@@ -516,7 +513,7 @@ cv.onRuntimeInitialized = () => {
     .on('cycle', function(event) {
       console.log(`=== ${event.target.name} ${event.target.id} ===`);
       let index = event.target.id-1;
-      console.log(`Params: (${parseInt(Params[index][0])}x${parseInt(Params[index][1])}, ${Params[index][2]})`);
+      console.log(`params: (${parseInt(params[index][0])}x${parseInt(params[index][1])}, ${params[index][2]})`);
       console.log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
       console.log('mean time:' +String(event.target.stats.mean*1000)+' ms');
       console.log('stddev time:' +String(event.target.stats.deviation*1000)+' ms');

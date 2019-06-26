@@ -8,7 +8,6 @@ cv.onRuntimeInitialized = () => {
   let suite = new Benchmark.Suite;
   global.cv = cv;
   global.HelpFunc = HelpFunc;
-  global.params = [];
   let totalTestNum = 0;
   const cvSize = Base.cvSize;
 
@@ -356,9 +355,9 @@ cv.onRuntimeInitialized = () => {
       cv.cvtColor(mat1, mat2, mode, 0);
       }, {
         'setup': function() {
-          let size = this.param.size;
-          let matType = this.param.matType;
-          let mode = this.param.mode;
+          let size = this.params.size;
+          let matType = this.params.matType;
+          let mode = cv[this.params.mode]%cv.COLOR_COLORCVT_MAX;
           let mat1 = new cv.Mat(size[1], size[0], matType[0]);
           let mat2 = new cv.Mat(size[1], size[0], matType[1]);
             },
@@ -376,16 +375,15 @@ cv.onRuntimeInitialized = () => {
       let mode = combination[i][1];
       let chPair = getConversionInfo(mode);
       let matType = getMatType(chPair);
-      params.push([size.width, size.height, mode]);
       let sizeArray = [size.width, size.height];
 
       addCvtColorCase();
       // set init params
       let index = suite.length - 1;
-      suite[index].param = {
+      suite[index].params = {
         size: sizeArray,
         matType: matType,
-        mode: cv[mode]%cv.COLOR_COLORCVT_MAX
+        mode: mode
       };
     };
   }
@@ -397,16 +395,15 @@ cv.onRuntimeInitialized = () => {
       let mode = combination[i][1];
       let chPair = getConversionInfo(mode);
       let matType = getMatType(chPair);
-      params.push([size.width, size.height, mode]);
       let sizeArray = [size.width, size.height];
 
       addCvtColorCase();
       // set init params
       let index = suite.length - 1;
-      suite[index].param = {
+      suite[index].params = {
         size: sizeArray,
         matType: matType,
-        mode: cv[mode]%cv.COLOR_COLORCVT_MAX
+        mode: mode
       };
     };
   }
@@ -418,16 +415,15 @@ cv.onRuntimeInitialized = () => {
       let mode = combination[i][1];
       let chPair = getConversionInfo(mode);
       let matType = getMatType(chPair);
-      params.push([size.width, size.height, mode]);
       let sizeArray = [size.width, size.height+size.height/2];
 
       addCvtColorCase();
       // set init params
       let index = suite.length - 1;
-      suite[index].param = {
+      suite[index].params = {
         size: sizeArray,
         matType: matType,
-        mode: cv[mode]%cv.COLOR_COLORCVT_MAX
+        mode: mode
       };
     };
   }
@@ -439,16 +435,15 @@ cv.onRuntimeInitialized = () => {
       let mode = combination[i][1];
       let chPair = getConversionInfo(mode);
       let matType = getMatType(chPair);
-      params.push([size.width, size.height, mode]);
       let sizeArray = [size.width, size.height+size.height/2];
 
       addCvtColorCase();
       // set init params
       let index = suite.length - 1;
-      suite[index].param = {
+      suite[index].params = {
         size: sizeArray,
         matType: matType,
-        mode: cv[mode]%cv.COLOR_COLORCVT_MAX
+        mode: mode
       };
     };
   }
@@ -460,16 +455,15 @@ cv.onRuntimeInitialized = () => {
       let mode = combination[i][1];
       let chPair = getConversionInfo(mode);
       let matType = getMatType(chPair);
-      params.push([size.width, size.height, mode]);
       let sizeArray = [size.width, size.height];
 
       addCvtColorCase();
       // set init params
       let index = suite.length - 1;
-      suite[index].param = {
+      suite[index].params = {
         size: sizeArray,
         matType: matType,
-        mode: cv[mode]%cv.COLOR_COLORCVT_MAX
+        mode: mode
       };
     };
   }
@@ -484,9 +478,9 @@ cv.onRuntimeInitialized = () => {
   const args = process.argv.slice(2);
   if (args.toString().match(/--test_param_filter/)) {
     if (/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+\)/g.test(args.toString())) {
-      let param = args.toString().match(/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
-      let sizeStr = param.match(/[0-9]+/g).slice(0, 2).toString();
-      let mode = (param.match(/CX\_[A-z]+2[A-z]+/) || param.match(/COLOR\_[A-z]+2[A-z]+/)).toString();
+      let params = args.toString().match(/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
+      let sizeStr = params.match(/[0-9]+/g).slice(0, 2).toString();
+      let mode = (params.match(/CX\_[A-z]+2[A-z]+/) || params.match(/COLOR\_[A-z]+2[A-z]+/)).toString();
       let size = HelpFunc.cvtStr2cvSize(sizeStr);
 
       // check if the params match and add case
@@ -512,8 +506,10 @@ cv.onRuntimeInitialized = () => {
     // add listeners
     .on('cycle', function(event) {
       console.log(`=== ${event.target.name} ${event.target.id} ===`);
-      let index = event.target.id-1;
-      console.log(`params: (${parseInt(params[index][0])}x${parseInt(params[index][1])}, ${params[index][2]})`);
+      let params = event.target.params;
+      let mode = params.mode;
+      let size = params.size;
+      console.log(`params: (${parseInt(size[0])}x${parseInt(size[1])}, ${mode})`);
       console.log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
       console.log('mean time:' +String(event.target.stats.mean*1000)+' ms');
       console.log('stddev time:' +String(event.target.stats.deviation*1000)+' ms');

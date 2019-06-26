@@ -8,7 +8,6 @@ cv.onRuntimeInitialized = () => {
   let suite = new Benchmark.Suite;
   global.cv = cv;
   global.HelpFunc = HelpFunc;
-  global.params = [];
   let totalTestNum = 0;
   const cvSize = Base.cvSize;
 
@@ -51,15 +50,14 @@ cv.onRuntimeInitialized = () => {
       let matType = combination[i][0];
       let from = combination[i][1];
       let to = combination[i][2];
-      params.push([matType, from, to]);
 
       suite.add('resize', function() {
-        cv.resize(src, dst, this.param.to, 0, 0, cv.INTER_LINEAR_EXACT);
+        cv.resize(src, dst, to, 0, 0, cv.INTER_LINEAR_EXACT);
         }, {
           'setup': function() {
-            let from = this.param.from;
-            let to = this.param.to;
-            let matType = this.param.matType;
+            let from = this.params.from;
+            let to = this.params.to;
+            let matType = cv[this.params.matType];
             let src = new cv.Mat(from, matType);
             let dst = new cv.Mat(to, matType);
             HelpFunc.fillGradient(cv, src);
@@ -72,10 +70,10 @@ cv.onRuntimeInitialized = () => {
 
       // set init params
       let index = suite.length - 1;
-      suite[index].param = {
+      suite[index].params = {
         from: from,
         to: to,
-        matType: cv[matType]
+        matType: matType
       };
     }
   }
@@ -86,15 +84,14 @@ cv.onRuntimeInitialized = () => {
       let matType = combination[i][0];
       let from = combination[i][1];
       let to = combination[i][2];
-      params.push([matType, from, to]);
 
       suite.add('resize', function() {
         cv.resize(src, dst, to, 0, 0, cv.INTER_LINEAR_EXACT);
         }, {
           'setup': function() {
-            let from = this.param.from;
-            let to = this.param.to;
-            let matType = this.param.matType;
+            let from = this.params.from;
+            let to = this.params.to;
+            let matType = cv[this.params.matType];
             let src = new cv.Mat(from, matType);
             let dst = new cv.Mat(to, matType);
             HelpFunc.fillGradient(cv, src);
@@ -107,10 +104,10 @@ cv.onRuntimeInitialized = () => {
 
       // set init params
       let index = suite.length - 1;
-      suite[index].param = {
+      suite[index].params = {
         from: from,
         to: to,
-        matType: cv[matType]
+        matType: matType
       };
     }
   }
@@ -125,16 +122,15 @@ cv.onRuntimeInitialized = () => {
       from.height = (Math.floor(from.height/scale))*scale;
       let to = {
         width: from.width/scale, 
-        height: from.height/scale};  // for param print
-      params.push([matType, from, to]);
+        height: from.height/scale};  // for params print
 
       suite.add('resize', function() {
         cv.resize(src, dst, dst.size(), 0, 0, cv.INTER_AREA);
         }, {
           'setup': function() {
-            let from = this.param.from;
-            let scale = this.param.scale;
-            let matType = this.param.matType;
+            let from = this.params.from;
+            let scale = this.params.scale;
+            let matType = cv[this.params.matType];
             let src = new cv.Mat(from, matType);
             let dst = new cv.Mat(from.height/scale, from.width/scale, matType);
               },
@@ -145,10 +141,10 @@ cv.onRuntimeInitialized = () => {
       });
       // set init params
       let index = suite.length - 1;
-      suite[index].param = {
+      suite[index].params = {
         from: from,
         scale: scale,
-        matType: cv[matType]
+        matType: matType
       };
     }
   }
@@ -162,12 +158,12 @@ cv.onRuntimeInitialized = () => {
   const args = process.argv.slice(2);
   if (args.toString().match(/--test_param_filter/)) {
     if (/--test_param_filter=\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g.test(args.toString())) {
-      let param = args.toString().match(/--test_param_filter=\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g)[0];
-      let sizeString = param.match(/[0-9]+x[0-9]+/g).slice(0, 2).toString();
+      let params = args.toString().match(/--test_param_filter=\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g)[0];
+      let sizeString = params.match(/[0-9]+x[0-9]+/g).slice(0, 2).toString();
       let sizes = sizeString.match(/[0-9]+/g);
       let size1Str = sizes.slice(0, 2).toString();
       let size2Str = sizes.slice(2, 5).toString();
-      let matType = param.match(/CV\_[0-9]+[A-z][A-z][0-9]/).toString();
+      let matType = params.match(/CV\_[0-9]+[A-z][A-z][0-9]/).toString();
       let size1 = HelpFunc.cvtStr2cvSize(size1Str);
       let size2 = HelpFunc.cvtStr2cvSize(size2Str);
       // check if the params match and add case
@@ -191,10 +187,10 @@ cv.onRuntimeInitialized = () => {
     // add listeners
     .on('cycle', function(event) {
       console.log(`=== ${event.target.name} ${event.target.id} ===`);
-      let index = event.target.id-1;
-      let matType = params[index][0];
-      let size1 = params[index][1];
-      let size2 = params[index][2];
+      let params = event.target.params;
+      let matType = params.matType;
+      let size1 = params.from;
+      let size2 = params.to;
       console.log(`params: (${matType},${parseInt(size1.width)}x${parseInt(size1.height)},`+
                   `${parseInt(size2.width)}x${parseInt(size2.height)})`);
       console.log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');

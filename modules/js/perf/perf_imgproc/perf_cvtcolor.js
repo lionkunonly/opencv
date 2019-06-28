@@ -214,7 +214,6 @@ cv.onRuntimeInitialized = () => {
   
   function getConversionInfo(cvtMode)
   {
-    let mode;
     switch(cvtMode)
     {
       case "COLOR_BayerBG2GRAY": case "COLOR_BayerGB2GRAY":
@@ -329,28 +328,22 @@ cv.onRuntimeInitialized = () => {
   }
 
   function getMatType(chPair) {
-    switch (chPair[0])
-      {
-        case 0: mat1Type = cv.CV_8UC;break;
-        case 1: mat1Type = cv.CV_8UC1;break;
-        case 2: mat1Type = cv.CV_8UC2;break;
-        case 3: mat1Type = cv.CV_8UC3;break;
-        case 4: mat1Type = cv.CV_8UC3;break;
-        default: mat1Type = cv.CV_8UC;break;
-      }
-    switch (chPair[1])
-      {
-        case 0: mat2Type = cv.CV_8UC;break;
-        case 1: mat2Type = cv.CV_8UC1;break;
-        case 2: mat2Type = cv.CV_8UC2;break;
-        case 3: mat2Type = cv.CV_8UC3;break;
-        case 4: mat2Type = cv.CV_8UC3;break;
-        default: mat2Type = cv.CV_8UC;break;
-      }
+    let dataType = "8U";  // now just support "8U" data type, we can set it as a param to extend the data type later.
+    let mat1Type, mat2Type;
+    if (chPair[0] === 0) {
+      mat1Type = `CV_${dataType}C`;
+    } else {
+      mat1Type = `CV_${dataType}C${chPair[0].toString()}`;
+    }
+    if (chPair[1] === 0) {
+      mat2Type = `CV_${dataType}C`;
+    } else {
+      mat2Type = `CV_${dataType}C${chPair[1].toString()}`;
+    }
     return [mat1Type, mat2Type];
   }
 
-  function addCvtColorCase(matType, size, mode) {
+  function addCvtColorCase() {
     suite.add('cvtColor', function() {
       cv.cvtColor(mat1, mat2, mode, 0);
       }, {
@@ -358,8 +351,8 @@ cv.onRuntimeInitialized = () => {
           let size = this.params.size;
           let matType = this.params.matType;
           let mode = cv[this.params.mode]%cv.COLOR_COLORCVT_MAX;
-          let mat1 = new cv.Mat(size[1], size[0], matType[0]);
-          let mat2 = new cv.Mat(size[1], size[0], matType[1]);
+          let mat1 = new cv.Mat(size[1], size[0], cv[matType[0]]);
+          let mat2 = new cv.Mat(size[1], size[0], cv[matType[1]]);
             },
         'teardown': function() {
           mat1.delete();

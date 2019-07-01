@@ -212,16 +212,16 @@ cv.onRuntimeInitialized = () => {
   const EdgeAwareBayerModeSize = [cvSize.szVGA, cvSize.sz720p, cvSize.sz1080p, cvSize.sz130x60];
   const combiEdgeAwareBayer = HelpFunc.combine(EdgeAwareBayerModeSize, EdgeAwareBayerMode);
   
-  function getConversionInfo(cvtMode)
-  {
-    switch(cvtMode)
-    {
+  // This function returns an array. The 1st element is the channel number of 
+  // source mat and 2nd element is the channel number of destination mat.
+  function getConversionInfo(cvtMode) {
+    switch(cvtMode) {
       case "COLOR_BayerBG2GRAY": case "COLOR_BayerGB2GRAY":
       case "COLOR_BayerGR2GRAY": case "COLOR_BayerRG2GRAY":
       case "COLOR_YUV2GRAY_420":
-          return [1, 1];
+        return [1, 1];
       case "COLOR_GRAY2BGR555": case "COLOR_GRAY2BGR565":
-          return [1, 2];
+        return [1, 2];
       case "COLOR_BayerBG2BGR": case "COLOR_BayerBG2BGR_VNG":
       case "COLOR_BayerGB2BGR": case "COLOR_BayerGB2BGR_VNG":
       case "COLOR_BayerGR2BGR": case "COLOR_BayerGR2BGR_VNG":
@@ -231,7 +231,7 @@ cv.onRuntimeInitialized = () => {
       case "COLOR_YUV2BGR_NV21": case "COLOR_YUV2RGB_NV21":
       case "COLOR_YUV2BGR_YV12": case "COLOR_YUV2RGB_YV12":
       case "COLOR_YUV2BGR_IYUV": case "COLOR_YUV2RGB_IYUV":
-          return [1, 3];
+        return [1, 3];
       case "COLOR_GRAY2BGRA":
       case "COLOR_YUV2BGRA_NV12": case "COLOR_YUV2RGBA_NV12":
       case "COLOR_YUV2BGRA_NV21": case "COLOR_YUV2RGBA_NV21":
@@ -239,28 +239,28 @@ cv.onRuntimeInitialized = () => {
       case "COLOR_YUV2BGRA_IYUV": case "COLOR_YUV2RGBA_IYUV":
       case "COLOR_BayerBG2BGRA": case "COLOR_BayerGB2BGRA":
       case "COLOR_BayerGR2BGRA": case "COLOR_BayerRG2BGRA":
-          return [1, 4];
+        return [1, 4];
       case "COLOR_BGR5552GRAY": case "COLOR_BGR5652GRAY":
-          return [2, 1];
+        return [2, 1];
       case "COLOR_BGR5552BGR": case "COLOR_BGR5552RGB":
       case "COLOR_BGR5652BGR": case "COLOR_BGR5652RGB":
       case "COLOR_YUV2RGB_UYVY": case "COLOR_YUV2BGR_UYVY":
       case "COLOR_YUV2RGB_YUY2": case "COLOR_YUV2BGR_YUY2":
       case "COLOR_YUV2RGB_YVYU": case "COLOR_YUV2BGR_YVYU":
-          return [2, 3];
+        return [2, 3];
       case "COLOR_BGR5552BGRA": case "COLOR_BGR5552RGBA":
       case "COLOR_BGR5652BGRA": case "COLOR_BGR5652RGBA":
       case "COLOR_YUV2RGBA_UYVY": case "COLOR_YUV2BGRA_UYVY":
       case "COLOR_YUV2RGBA_YUY2": case "COLOR_YUV2BGRA_YUY2":
       case "COLOR_YUV2RGBA_YVYU": case "COLOR_YUV2BGRA_YVYU":
-          return [2, 4];
+        return [2, 4];
       case "COLOR_BGR2GRAY": case "COLOR_RGB2GRAY":
       case "COLOR_RGB2YUV_IYUV": case "COLOR_RGB2YUV_YV12":
       case "COLOR_BGR2YUV_IYUV": case "COLOR_BGR2YUV_YV12":
-          return [3, 1];
+        return [3, 1];
       case "COLOR_BGR2BGR555": case "COLOR_BGR2BGR565":
       case "COLOR_RGB2BGR555": case "COLOR_RGB2BGR565":
-          return [3, 2];
+        return [3, 2];
       case "COLOR_BGR2HLS": case "COLOR_BGR2HLS_FULL":
       case "COLOR_BGR2HSV": case "COLOR_BGR2HSV_FULL":
       case "COLOR_BGR2Lab": case "COLOR_BGR2Luv":
@@ -284,7 +284,7 @@ cv.onRuntimeInitialized = () => {
       case "COLOR_XYZ2RGB": case "COLOR_YCrCb2BGR":
       case "COLOR_YCrCb2RGB": case "COLOR_YUV2BGR":
       case "COLOR_YUV2RGB":
-          return [3, 3];
+        return [3, 3];
       case "COLOR_BGR2BGRA": case "COLOR_BGR2RGBA":
       case "CX_HLS2BGRA": case "CX_HLS2BGRA_FULL":
       case "CX_HLS2RGBA": case "CX_HLS2RGBA_FULL":
@@ -297,14 +297,14 @@ cv.onRuntimeInitialized = () => {
       case "CX_XYZ2BGRA": case "CX_XYZ2RGBA":
       case "CX_YCrCb2BGRA": case "CX_YCrCb2RGBA":
       case "CX_YUV2BGRA": case "CX_YUV2RGBA":
-          return [3, 4];
+        return [3, 4];
       case "COLOR_BGRA2GRAY": case "COLOR_RGBA2GRAY":
       case "COLOR_RGBA2YUV_IYUV": case "COLOR_RGBA2YUV_YV12":
       case "COLOR_BGRA2YUV_IYUV": case "COLOR_BGRA2YUV_YV12":
-          return [4, 1];
+        return [4, 1];
       case "COLOR_BGRA2BGR555": case "COLOR_BGRA2BGR565":
       case "COLOR_RGBA2BGR555": case "COLOR_RGBA2BGR565":
-          return [4, 2];
+        return [4, 2];
       case "COLOR_BGRA2BGR": case "CX_BGRA2HLS":
       case "CX_BGRA2HLS_FULL": case "CX_BGRA2HSV":
       case "CX_BGRA2HSV_FULL": case "CX_BGRA2Lab":
@@ -317,12 +317,12 @@ cv.onRuntimeInitialized = () => {
       case "CX_RGBA2HSV_FULL": case "CX_RGBA2Lab":
       case "CX_RGBA2Luv": case "CX_RGBA2XYZ":
       case "CX_RGBA2YCrCb": case "CX_RGBA2YUV":
-          return [4, 3];
+        return [4, 3];
       case "COLOR_BGRA2RGBA":
-          return [4, 4];
+        return [4, 4];
       default:
-          console.error("Unknown conversion type");
-          break;
+        console.error("Unknown conversion type");
+        break;
       };
       return [0, 0];
   }

@@ -103,7 +103,7 @@ class Builder:
                "-DWITH_OPENNI2=OFF",
                "-DWITH_PNG=OFF",
                "-DWITH_TBB=OFF",
-               "-DWITH_PTHREADS_PF=OFF",
+               "-DWITH_PTHREADS_PF=ON",
                "-DWITH_TIFF=OFF",
                "-DWITH_V4L=OFF",
                "-DWITH_OPENCL=OFF",

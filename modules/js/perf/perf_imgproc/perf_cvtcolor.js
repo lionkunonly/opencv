@@ -1,15 +1,29 @@
-var Benchmark = require('benchmark');
-var cv = require('../../opencv');
-var HelpFunc = require('../perf_helpfunc');
-var Base = require('../base');
+const isNodeJs = (typeof window) === 'undefined'? true : false;
+
+if (isNodeJs) {
+  var Benchmark = require('benchmark');
+  var cv = require('../../opencv');
+  var HelpFunc = require('../perf_helpfunc');
+  var Base = require('../base');
+} else {
+  var paramsElement = document.getElementById('params');
+  var runButton = document.getElementById('runButton');
+  var logElement = document.getElementById('log');
+}
 
 cv.onRuntimeInitialized = () => {
   console.log('opencv.js loaded');
-  let suite = new Benchmark.Suite;
-  global.cv = cv;
-  global.HelpFunc = HelpFunc;
-  let totalTestNum = 0;
-  const cvSize = Base.cvSize;
+  if (isNodeJs) {
+    global.cv = cv;
+    global.combine = HelpFunc.combine;
+    global.cvtStr2cvSize = HelpFunc.cvtStr2cvSize;
+    global.cvSize = Base.cvSize;
+  } else {
+    runButton.removeAttribute('disabled');
+    runButton.setAttribute('class', 'btn btn-primary');
+    runButton.innerHTML = 'Run';
+  }
+  let totalCaseNum, currentCaseId;
 
   //extra color conversions supported implicitly
   {
@@ -105,7 +119,7 @@ cv.onRuntimeInitialized = () => {
     "COLOR_YUV2BGR", "COLOR_YUV2RGB", "CX_YUV2BGRA", "CX_YUV2RGBA"
   ];
   const CvtModeSize = [cvSize.szODD, cvSize.szVGA, cvSize.sz1080p];
-  const combiCvtMode = HelpFunc.combine(CvtModeSize, CvtMode);
+  const combiCvtMode = combine(CvtModeSize, CvtMode);
 
   // didn't support 16u and 32f perf tests according to 
   // https://github.com/opencv/opencv/commit/4e679e1cc5b075ec006b29a58b4fe117523fba1d
@@ -133,7 +147,7 @@ cv.onRuntimeInitialized = () => {
     "COLOR_YUV2BGR", "COLOR_YUV2RGB", "CX_YUV2BGRA", "CX_YUV2RGBA"
   ];
   const CvtMode16USize = [cvSize.szODD, cvSize.szVGA, cvSize.sz1080p];
-  const combiCvtMode16U = HelpFunc.combine(CvtMode16USize, CvtMode16U);
+  const combiCvtMode16U = combine(CvtMode16USize, CvtMode16U);
 
   const CvtMode32F = [
     "COLOR_BGR2BGRA", "COLOR_BGR2GRAY",
@@ -178,7 +192,7 @@ cv.onRuntimeInitialized = () => {
     "COLOR_YUV2BGR", "COLOR_YUV2RGB", "CX_YUV2BGRA", "CX_YUV2RGBA"
   ];
   const CvtMode32FSize = [cvSize.szODD, cvSize.szVGA, cvSize.sz1080p];
-  const combiCvtMode32F = HelpFunc.combine(CvtMode32FSize, CvtMode32F);
+  const combiCvtMode32F = combine(CvtMode32FSize, CvtMode32F);
 
   const CvtModeBayer = [
     "COLOR_BayerBG2BGR", "COLOR_BayerBG2BGRA", "COLOR_BayerBG2BGR_VNG", "COLOR_BayerBG2GRAY",
@@ -187,7 +201,7 @@ cv.onRuntimeInitialized = () => {
     "COLOR_BayerRG2BGR", "COLOR_BayerRG2BGRA", "COLOR_BayerRG2BGR_VNG", "COLOR_BayerRG2GRAY"
   ];
   const CvtModeBayerSize = [cvSize.szODD, cvSize.szVGA];
-  const combiCvtModeBayer = HelpFunc.combine(CvtModeBayerSize, CvtModeBayer);
+  const combiCvtModeBayer = combine(CvtModeBayerSize, CvtModeBayer);
 
 
   const CvtMode2 = [
@@ -197,20 +211,20 @@ cv.onRuntimeInitialized = () => {
     "COLOR_YUV2BGR_YVYU", "COLOR_YUV2RGBA_YUY2", "COLOR_YUV2BGRA_YUY2", "COLOR_YUV2RGBA_YVYU", "COLOR_YUV2BGRA_YVYU"
   ];
   const CvtMode2Size = [cvSize.szVGA, cvSize.sz1080p, cvSize.sz130x60];
-  const combiCvtMode2 = HelpFunc.combine(CvtMode2Size, CvtMode2);
+  const combiCvtMode2 = combine(CvtMode2Size, CvtMode2);
 
   const CvtMode3 = [ 
     "COLOR_RGB2YUV_IYUV", "COLOR_BGR2YUV_IYUV", "COLOR_RGBA2YUV_IYUV", "COLOR_BGRA2YUV_IYUV",
     "COLOR_RGB2YUV_YV12", "COLOR_BGR2YUV_YV12", "COLOR_RGBA2YUV_YV12", "COLOR_BGRA2YUV_YV12"
   ];
   const CvtMode3Size = [cvSize.szVGA, cvSize.sz720p, cvSize.sz1080p, cvSize.sz130x60];
-  const combiCvtMode3 = HelpFunc.combine(CvtMode3Size, CvtMode3);
+  const combiCvtMode3 = combine(CvtMode3Size, CvtMode3);
 
   const EdgeAwareBayerMode = [
     "COLOR_BayerBG2BGR_EA", "COLOR_BayerGB2BGR_EA", "COLOR_BayerRG2BGR_EA", "COLOR_BayerGR2BGR_EA"
   ];
   const EdgeAwareBayerModeSize = [cvSize.szVGA, cvSize.sz720p, cvSize.sz1080p, cvSize.sz130x60];
-  const combiEdgeAwareBayer = HelpFunc.combine(EdgeAwareBayerModeSize, EdgeAwareBayerMode);
+  const combiEdgeAwareBayer = combine(EdgeAwareBayerModeSize, EdgeAwareBayerMode);
   
   // This function returns an array. The 1st element is the channel number of 
   // source mat and 2nd element is the channel number of destination mat.
@@ -343,7 +357,7 @@ cv.onRuntimeInitialized = () => {
     return [mat1Type, mat2Type];
   }
 
-  function addCvtColorCase() {
+  function addCvtColorCase(suite) {
     suite.add('cvtColor', function() {
       cv.cvtColor(mat1, mat2, mode, 0);
       }, {
@@ -361,8 +375,8 @@ cv.onRuntimeInitialized = () => {
     });
   }
 
-  function addCvtModeCase(combination) {
-    totalTestNum += combination.length;
+  function addCvtModeCase(suite, combination) {
+    totalCaseNum += combination.length;
     for(let i = 0; i < combination.length; ++i) {
       let size = combination[i][0];
       let mode = combination[i][1];
@@ -370,7 +384,7 @@ cv.onRuntimeInitialized = () => {
       let matType = getMatType(chPair);
       let sizeArray = [size.width, size.height];
 
-      addCvtColorCase();
+      addCvtColorCase(suite);
       // set init params
       let index = suite.length - 1;
       suite[index].params = {
@@ -381,8 +395,8 @@ cv.onRuntimeInitialized = () => {
     };
   }
 
-  function addCvtModeBayerCase(combination) {
-    totalTestNum += combination.length;
+  function addCvtModeBayerCase(suite, combination) {
+    totalCaseNum += combination.length;
     for(let i = 0; i < combination.length; ++i) {
       let size = combination[i][0];
       let mode = combination[i][1];
@@ -390,7 +404,7 @@ cv.onRuntimeInitialized = () => {
       let matType = getMatType(chPair);
       let sizeArray = [size.width, size.height];
 
-      addCvtColorCase();
+      addCvtColorCase(suite);
       // set init params
       let index = suite.length - 1;
       suite[index].params = {
@@ -401,8 +415,8 @@ cv.onRuntimeInitialized = () => {
     };
   }
 
-  function addCvtMode2Case(combination) {
-    totalTestNum += combination.length;
+  function addCvtMode2Case(suite, combination) {
+    totalCaseNum += combination.length;
     for(let i = 0; i < combination.length; ++i) {
       let size = combination[i][0];
       let mode = combination[i][1];
@@ -410,7 +424,7 @@ cv.onRuntimeInitialized = () => {
       let matType = getMatType(chPair);
       let sizeArray = [size.width, size.height+size.height/2];
 
-      addCvtColorCase();
+      addCvtColorCase(suite);
       // set init params
       let index = suite.length - 1;
       suite[index].params = {
@@ -421,8 +435,8 @@ cv.onRuntimeInitialized = () => {
     };
   }
 
-  function addCvtMode3Case(combination) {
-    totalTestNum += combination.length;
+  function addCvtMode3Case(suite, combination) {
+    totalCaseNum += combination.length;
     for(let i = 0; i < combination.length; ++i) {
       let size = combination[i][0];
       let mode = combination[i][1];
@@ -430,7 +444,7 @@ cv.onRuntimeInitialized = () => {
       let matType = getMatType(chPair);
       let sizeArray = [size.width, size.height+size.height/2];
 
-      addCvtColorCase();
+      addCvtColorCase(suite);
       // set init params
       let index = suite.length - 1;
       suite[index].params = {
@@ -441,8 +455,8 @@ cv.onRuntimeInitialized = () => {
     };
   }
 
-  function addEdgeAwareBayerModeCase(combination) {
-    totalTestNum += combination.length;
+  function addEdgeAwareBayerModeCase(suite, combination) {
+    totalCaseNum += combination.length;
     for(let i = 0; i < combination.length; ++i) {
       let size = combination[i][0];
       let mode = combination[i][1];
@@ -450,7 +464,7 @@ cv.onRuntimeInitialized = () => {
       let matType = getMatType(chPair);
       let sizeArray = [size.width, size.height];
 
-      addCvtColorCase();
+      addCvtColorCase(suite);
       // set init params
       let index = suite.length - 1;
       suite[index].params = {
@@ -460,6 +474,57 @@ cv.onRuntimeInitialized = () => {
       };
     };
   }
+
+  function decodeParams2Case(suite, params) {
+    let sizeStr = params.match(/[0-9]+/g).slice(0, 2).toString();
+    let mode = (params.match(/CX\_[A-z]+2[A-z]+/) || params.match(/COLOR\_[A-z]+2[A-z]+/)).toString();
+    let size = cvtStr2cvSize(sizeStr);
+
+    // check if the params match and add case
+    for (let i = 0; i < combinations.length; ++i) {
+      let combination = combinations[i];
+      for (let j = 0; j < combination.length; ++j) {
+        if (size === combination[j][0] && mode === combination[j][1]) {
+          cvtFunc[i](suite, [combination[j]]);
+        }
+      }
+    }
+  }
+
+  function log(message) {
+    console.log(message);
+    if (!isNodeJs) {
+      logElement.innerHTML += `\n${'\t' + message}`;
+    }
+  }
+
+  function setBenchmarkSuite(suite) {
+    suite
+    // add listeners
+    .on('cycle', function(event) {
+      ++currentCaseId;
+      let params = event.target.params;
+      let mode = params.mode;
+      let size = params.size;
+      log(`=== ${event.target.name} ${currentCaseId} ===`);
+      log(`params: (${parseInt(size[0])}x${parseInt(size[1])}, ${mode})`);
+      log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
+      log('mean time:' +String(event.target.stats.mean*1000)+' ms');
+      log('stddev time:' +String(event.target.stats.deviation*1000)+' ms');
+      log(String(event.target));
+    })
+    .on('error', function(event) { log(`test case ${event.target.name} failed`); })
+    .on('complete', function(event) {
+      log(`\n ###################################`)
+      log(`Finished testing ${event.currentTarget.length} cases \n`);
+      if (!isNodeJs) {
+        runButton.removeAttribute('disabled');
+        runButton.setAttribute('class', 'btn btn-primary');
+        runButton.innerHTML = 'Run';
+      }
+    });
+  }
+
 
 
   // init
@@ -468,53 +533,47 @@ cv.onRuntimeInitialized = () => {
 
   // Flags
   // set test filter params
-  const args = process.argv.slice(2);
-  if (args.toString().match(/--test_param_filter/)) {
+  if (isNodeJs) {
+    let suite = new Benchmark.Suite;
+    totalCaseNum = 0;
+    currentCaseId = 0;
+    const args = process.argv.slice(2);
     if (/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+\)/g.test(args.toString())) {
       let params = args.toString().match(/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
-      let sizeStr = params.match(/[0-9]+/g).slice(0, 2).toString();
-      let mode = (params.match(/CX\_[A-z]+2[A-z]+/) || params.match(/COLOR\_[A-z]+2[A-z]+/)).toString();
-      let size = HelpFunc.cvtStr2cvSize(sizeStr);
-
-      // check if the params match and add case
-      for (let i = 0; i < combinations.length; ++i) {
-        let combination = combinations[i];
-        for (let j = 0; j < combination.length; ++j) {
-          if (size === combination[j][0] && mode === combination[j][1]) {
-            cvtFunc[i]([combination[j]]);
-          }
-        }
-      }
+      decodeParams2Case(suite, params);
+    } else {
+      log("no filter or getting invalid params, run all the cases");
+      addCvtModeCase(suite, combiCvtMode);
+      addCvtModeBayerCase(suite, combiCvtModeBayer);
+      addCvtMode2Case(suite, combiCvtMode2);
+      addCvtMode3Case(suite, combiCvtMode3);
     }
+    setBenchmarkSuite(suite);
+    log(`Running ${totalCaseNum} tests from CvtColor`);
+    suite.run({ 'async': true }); // run the benchmark
   } else {
-    // no filter, test all the cases
-    addCvtModeCase(combiCvtMode);
-    addCvtModeBayerCase(combiCvtModeBayer);
-    addCvtMode2Case(combiCvtMode2);
-    addCvtMode3Case(combiCvtMode3);
+    let suite;
+    runButton.onclick = function()　{
+      suite = new Benchmark.Suite;
+      totalCaseNum = 0;
+      currentCaseId = 0;
+      let paramsContent = paramsElement.value;
+      if (/\([0-9]+x[0-9]+,[\ ]*\w+\)/g.test(paramsContent.toString())) {
+        let params = paramsContent.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
+        decodeParams2Case(suite, params);
+      } else {
+        log("no filter or getting invalid params, run all the cases");
+        addCvtModeCase(suite, combiCvtMode);
+        addCvtModeBayerCase(suite, combiCvtModeBayer);
+        addCvtMode2Case(suite, combiCvtMode2);
+        addCvtMode3Case(suite, combiCvtMode3);
+      }
+      setBenchmarkSuite(suite);
+      log(`Running ${totalCaseNum} tests from CvtColor`);
+      suite.run({ 'async': true }); // run the benchmark
+      runButton.setAttribute("disabled", "disabled");
+      runButton.setAttribute('class', 'btn btn-primary disabled');
+      runButton.innerHTML = "Running";
+    }
   }
-
-  console.log(`Running ${totalTestNum} tests from CvtColor`);  
-  suite
-    // add listeners
-    .on('cycle', function(event) {
-      console.log(`=== ${event.target.name} ${event.target.id} ===`);
-      let params = event.target.params;
-      let mode = params.mode;
-      let size = params.size;
-      console.log(`params: (${parseInt(size[0])}x${parseInt(size[1])}, ${mode})`);
-      console.log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
-      console.log('mean time:' +String(event.target.stats.mean*1000)+' ms');
-      console.log('stddev time:' +String(event.target.stats.deviation*1000)+' ms');
-      console.log(String(event.target));
-    })
-    .on('error', function(event) { console.log(`test case ${event.target.name} failed`); })
-    .on('complete', function(event) {
-      console.log(``);
-      console.log(`###################################`);
-      console.log(`Finished testing ${event.currentTarget.length} cases`);
-    })
-
-    // run async
-    .run({ 'async': true });
 };

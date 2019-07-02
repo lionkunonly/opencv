@@ -1,20 +1,35 @@
-var Benchmark = require('benchmark');
-var cv = require('../../opencv');
-var HelpFunc = require('../perf_helpfunc');
-var Base = require('../base');
+const isNodeJs = (typeof window) === 'undefined'? true : false;
+
+if　(isNodeJs)　{
+  var Benchmark = require('benchmark');
+  var cv = require('../../opencv');
+  var HelpFunc = require('../perf_helpfunc');
+  var Base = require('../base');
+} else {
+  var paramsElement = document.getElementById('params');
+  var runButton = document.getElementById('runButton');
+  var logElement = document.getElementById('log');
+}
 
 cv.onRuntimeInitialized = () => {
   console.log('opencv.js loaded');
-  let suite = new Benchmark.Suite;
-  global.cv = cv;
-  global.HelpFunc = HelpFunc;
-  let totalTestNum = 0;
-  const cvSize = Base.cvSize;
+  if (isNodeJs) {
+    global.cv = cv;
+    global.combine = HelpFunc.combine;
+    global.fillGradient = HelpFunc.fillGradient;
+    global.cvtStr2cvSize = HelpFunc.cvtStr2cvSize;
+    global.cvSize = Base.cvSize;
+  } else {
+    runButton.removeAttribute('disabled');
+    runButton.setAttribute('class', 'btn btn-primary');
+    runButton.innerHTML = 'Run';
+  }
+  let totalCaseNum, currentCaseId;
 
   const matTypesUpLinear = ['CV_8UC1', 'CV_8UC2', 'CV_8UC3', 'CV_8UC4'];
   const size1UpLinear = [cvSize.szVGA];
   const size2UpLinear = [cvSize.szqHD, cvSize.sz720p];
-  const combiUpLinear = HelpFunc.combine(matTypesUpLinear, size1UpLinear, size2UpLinear);
+  const combiUpLinear = combine(matTypesUpLinear, size1UpLinear, size2UpLinear);
 
   const combiDownLinear = [
     ['CV_8UC1', cvSize.szVGA, cvSize.szQVGA],
@@ -42,10 +57,10 @@ cv.onRuntimeInitialized = () => {
   const matTypesAreaFast = ['CV_8UC1', 'CV_8UC3', 'CV_8UC4', 'CV_16UC1', 'CV_16UC3', 'CV_16UC4'];
   const sizesAreaFast = [cvSize.szVGA, cvSize.szqHD, cvSize.sz720p, cvSize.sz1080p];
   const scalesAreaFast = [2];
-  const combiAreaFast = HelpFunc.combine(matTypesAreaFast, sizesAreaFast, scalesAreaFast);
+  const combiAreaFast = combine(matTypesAreaFast, sizesAreaFast, scalesAreaFast);
 
-  function addResizeUpLinearCase(combination) {
-    totalTestNum += combination.length;
+  function addResizeUpLinearCase(suite, combination) {
+    totalCaseNum += combination.length;
     for (let i = 0; i < combination.length; ++i) {
       let matType = combination[i][0];
       let from = combination[i][1];
@@ -60,7 +75,7 @@ cv.onRuntimeInitialized = () => {
             let matType = cv[this.params.matType];
             let src = new cv.Mat(from, matType);
             let dst = new cv.Mat(to, matType);
-            HelpFunc.fillGradient(cv, src);
+            fillGradient(cv, src);
               },
           'teardown': function() {
             src.delete();
@@ -78,8 +93,8 @@ cv.onRuntimeInitialized = () => {
     }
   }
 
-  function addResizeDownLinearCase(combination) {
-    totalTestNum += combination.length;
+  function addResizeDownLinearCase(suite, combination) {
+    totalCaseNum += combination.length;
     for (let i = 0; i < combination.length; ++i) {
       let matType = combination[i][0];
       let from = combination[i][1];
@@ -94,7 +109,7 @@ cv.onRuntimeInitialized = () => {
             let matType = cv[this.params.matType];
             let src = new cv.Mat(from, matType);
             let dst = new cv.Mat(to, matType);
-            HelpFunc.fillGradient(cv, src);
+            fillGradient(cv, src);
               },
           'teardown': function() {
             src.delete();
@@ -112,8 +127,8 @@ cv.onRuntimeInitialized = () => {
     }
   }
 
-  function addResizeAreaFastCase(combination) {
-    totalTestNum += combination.length;
+  function addResizeAreaFastCase(suite, combination) {
+    totalCaseNum += combination.length;
     for (let i = 0; i < combination.length; ++i) {
       let matType = combination[i][0];
       let from = combination[i][1];
@@ -149,62 +164,97 @@ cv.onRuntimeInitialized = () => {
     }
   }
 
-  // init
-  let resizeFunc = [addResizeUpLinearCase, addResizeDownLinearCase];//, addResizeAreaFastCase];
-  let combinations = [combiUpLinear, combiDownLinear];//, combiAreaFast];
-
-  // Flags
-  // set test filter params
-  const args = process.argv.slice(2);
-  if (args.toString().match(/--test_param_filter/)) {
-    if (/--test_param_filter=\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g.test(args.toString())) {
-      let params = args.toString().match(/--test_param_filter=\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g)[0];
-      let sizeString = params.match(/[0-9]+x[0-9]+/g).slice(0, 2).toString();
-      let sizes = sizeString.match(/[0-9]+/g);
-      let size1Str = sizes.slice(0, 2).toString();
-      let size2Str = sizes.slice(2, 5).toString();
-      let matType = params.match(/CV\_[0-9]+[A-z][A-z][0-9]/).toString();
-      let size1 = HelpFunc.cvtStr2cvSize(size1Str);
-      let size2 = HelpFunc.cvtStr2cvSize(size2Str);
-      // check if the params match and add case
-      for (let i = 0; i < combinations.length; ++i) {
-        let combination = combinations[i];
-        for (let j = 0; j < combination.length; ++j) {
-          if (matType === combination[j][0] && size1 === combination[j][1] && size2 === combination[j][2]) {
-            resizeFunc[i]([combination[j]]);
-          }
+  function decodeParams2Case(suite, params) {
+    let sizeString = params.match(/[0-9]+x[0-9]+/g).slice(0, 2).toString();
+    let sizes = sizeString.match(/[0-9]+/g);
+    let size1Str = sizes.slice(0, 2).toString();
+    let size2Str = sizes.slice(2, 5).toString();
+    let matType = params.match(/CV\_[0-9]+[A-z][A-z][0-9]/).toString();
+    let size1 = cvtStr2cvSize(size1Str);
+    let size2 = cvtStr2cvSize(size2Str);
+    // check if the params match and add case
+    for (let i = 0; i < combinations.length; ++i) {
+      let combination = combinations[i];
+      for (let j = 0; j < combination.length; ++j) {
+        if (matType === combination[j][0] && size1 === combination[j][1] && size2 === combination[j][2]) {
+          resizeFunc[i](suite, [combination[j]]);
         }
       }
     }
-  } else {
-    // no filter, test all the cases
-    addResizeUpLinearCase(combiUpLinear);
-    addResizeDownLinearCase(combiDownLinear);
   }
 
-  console.log(`Running ${totalTestNum} tests from Resize`);
-  suite
+  function log(message) {
+    console.log(message);
+    if (!isNodeJs) {
+      logElement.innerHTML += `\n${'\t'.repeat(1) + message}`; 
+    }
+  }
+
+  function setBenchmarkSuite(suite) {
+    suite
     // add listeners
     .on('cycle', function(event) {
-      console.log(`=== ${event.target.name} ${event.target.id} ===`);
+      ++currentCaseId;
       let params = event.target.params;
       let matType = params.matType;
       let size1 = params.from;
       let size2 = params.to;
-      console.log(`params: (${matType},${parseInt(size1.width)}x${parseInt(size1.height)},`+
-                  `${parseInt(size2.width)}x${parseInt(size2.height)})`);
-      console.log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
-      console.log('mean time:' +String(event.target.stats.mean*1000)+' ms');
-      console.log('stddev time:' +String(event.target.stats.deviation*1000)+' ms');
-      console.log(String(event.target));
+      log(`=== ${event.target.name} ${currentCaseId} ===`);
+      log(`params: (${matType},${parseInt(size1.width)}x${parseInt(size1.height)},`+
+          `${parseInt(size2.width)}x${parseInt(size2.height)})`);
+      log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
+      log('mean time:' +String(event.target.stats.mean*1000)+' ms');
+      log('stddev time:' +String(event.target.stats.deviation*1000)+' ms');
+      log(String(event.target));
     })
-    .on('error', function(event) { console.log(`test case ${event.target.name} failed`); })
+    .on('error', function(event) { log(`test case ${event.target.name} failed`); })
     .on('complete', function(event) {
-      console.log(``);
-      console.log(`###################################`)
-      console.log(`Finished testing ${event.currentTarget.length} cases`);
-    })
+      log(`\n ###################################`)
+      log(`Finished testing ${event.currentTarget.length} cases \n`);
+      if (!isNodeJs) {
+        runButton.removeAttribute('disabled');
+        runButton.setAttribute('class', 'btn btn-primary');
+        runButton.innerHTML = 'Run';
+      }
+    });
+  }
 
-    // run async
-    .run({ 'async': true });
+  function genBenchmarkCase(paramsContent) {
+    let suite = new Benchmark.Suite;
+    totalCaseNum = 0;
+    currentCaseId = 0;
+    if (/\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g.test(paramsContent.toString())) {
+      let params = paramsContent.toString().match(/\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g)[0];
+      decodeParams2Case(suite, params);
+    } else {
+      log("no filter or getting invalid params, run all the cases");
+      addResizeUpLinearCase(suite, combiUpLinear);
+      addResizeDownLinearCase(suite, combiDownLinear);
+    }
+    setBenchmarkSuite(suite);
+    log(`Running ${totalCaseNum} tests from Resize`);
+    suite.run({ 'async': true }); // run the benchmark
+  }
+
+  // init
+  let resizeFunc = [addResizeUpLinearCase, addResizeDownLinearCase];//, addResizeAreaFastCase];
+  let combinations = [combiUpLinear, combiDownLinear];//, combiAreaFast];
+
+  // set test filter params
+  if (isNodeJs) {
+    const args = process.argv.slice(2);
+    let paramsContent = '';
+    if (/--test_param_filter=\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g.test(args.toString())) {
+      paramsContent = args.toString().match(/\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g)[0];
+    }
+    genBenchmarkCase(paramsContent);
+  } else {
+    runButton.onclick = function()　{
+      let paramsContent = paramsElement.value;
+      genBenchmarkCase(paramsContent);
+      runButton.setAttribute("disabled", "disabled");
+      runButton.setAttribute('class', 'btn btn-primary disabled');
+      runButton.innerHTML = "Running";
+    }
+  }
 };

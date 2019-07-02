@@ -1,4 +1,4 @@
-exports.fillGradient = function(cv, img, delta=5) {
+var fillGradient = function(cv, img, delta=5) {
   let ch = img.channels();
   console.assert(!img.empty() && img.depth() == cv.CV_8U && ch <= 4);
 
@@ -16,9 +16,7 @@ exports.fillGradient = function(cv, img, delta=5) {
   }
 }
 
-exports.cvtStr2cvSize = function(strSize) {
-  let Base = require('./base');
-  let cvSize = Base.cvSize;
+var cvtStr2cvSize = function(strSize) {
   let size;
   switch(strSize) {
     case "127,61": size = cvSize.szODD;break;
@@ -34,7 +32,7 @@ exports.cvtStr2cvSize = function(strSize) {
   return size;
 }
 
-exports.combine = function() {
+var combine = function() {
   let result = [[]];
   for (let i = 0; i < arguments.length; ++i) {
     result = permute(result, arguments[i]);
@@ -52,4 +50,10 @@ function permute (source, target) {
     }
   }
   return result;
+}
+
+if (typeof window === 'undefined') {
+  exports.fillGradient = fillGradient;
+  exports.cvtStr2cvSize = cvtStr2cvSize;
+  exports.combine = combine;
 }

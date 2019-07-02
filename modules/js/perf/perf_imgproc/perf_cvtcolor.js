@@ -525,21 +525,13 @@ cv.onRuntimeInitialized = () => {
     });
   }
 
-
-
-  // init
-  let cvtFunc = [addCvtModeCase, addCvtModeBayerCase, addCvtMode2Case, addCvtMode3Case];//, addEdgeAwareBayerModeCase];
-  let combinations = [combiCvtMode, combiCvtModeBayer, combiCvtMode2, combiCvtMode3];//, combiEdgeAwareBayer];
-
-  // Flags
-  // set test filter params
-  if (isNodeJs) {
+  function genBenchmarkCase(paramsContent) {
     let suite = new Benchmark.Suite;
     totalCaseNum = 0;
     currentCaseId = 0;
-    const args = process.argv.slice(2);
-    if (/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+\)/g.test(args.toString())) {
-      let params = args.toString().match(/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
+    let paramsContent = paramsElement.value;
+    if (/\([0-9]+x[0-9]+,[\ ]*\w+\)/g.test(paramsContent.toString())) {
+      let params = paramsContent.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
       decodeParams2Case(suite, params);
     } else {
       log("no filter or getting invalid params, run all the cases");
@@ -551,26 +543,25 @@ cv.onRuntimeInitialized = () => {
     setBenchmarkSuite(suite);
     log(`Running ${totalCaseNum} tests from CvtColor`);
     suite.run({ 'async': true }); // run the benchmark
+  }
+
+
+
+  // init
+  let cvtFunc = [addCvtModeCase, addCvtModeBayerCase, addCvtMode2Case, addCvtMode3Case];//, addEdgeAwareBayerModeCase];
+  let combinations = [combiCvtMode, combiCvtModeBayer, combiCvtMode2, combiCvtMode3];//, combiEdgeAwareBayer];
+
+  // set test filter params
+  if (isNodeJs) {
+    let paramsContent = '';
+    if (/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+\)/g.test(args.toString())) {
+      paramsContent = args.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
+    }
+    genBenchmarkCase(paramsContent);
   } else {
-    let suite;
     runButton.onclick = function()　{
-      suite = new Benchmark.Suite;
-      totalCaseNum = 0;
-      currentCaseId = 0;
       let paramsContent = paramsElement.value;
-      if (/\([0-9]+x[0-9]+,[\ ]*\w+\)/g.test(paramsContent.toString())) {
-        let params = paramsContent.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
-        decodeParams2Case(suite, params);
-      } else {
-        log("no filter or getting invalid params, run all the cases");
-        addCvtModeCase(suite, combiCvtMode);
-        addCvtModeBayerCase(suite, combiCvtModeBayer);
-        addCvtMode2Case(suite, combiCvtMode2);
-        addCvtMode3Case(suite, combiCvtMode3);
-      }
-      setBenchmarkSuite(suite);
-      log(`Running ${totalCaseNum} tests from CvtColor`);
-      suite.run({ 'async': true }); // run the benchmark
+      genBenchmarkCase(paramsContent);
       runButton.setAttribute("disabled", "disabled");
       runButton.setAttribute('class', 'btn btn-primary disabled');
       runButton.innerHTML = "Running";

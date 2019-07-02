@@ -219,45 +219,39 @@ cv.onRuntimeInitialized = () => {
     });
   }
 
-  // init
-  let resizeFunc = [addResizeUpLinearCase, addResizeDownLinearCase];//, addResizeAreaFastCase];
-  let combinations = [combiUpLinear, combiDownLinear];//, combiAreaFast];
-
-  // Flags
-  // set test filter params
-  if (isNodeJs) {
+  function genBenchmarkCase(paramsContent) {
     let suite = new Benchmark.Suite;
     totalCaseNum = 0;
     currentCaseId = 0;
-    const args = process.argv.slice(2);
-    if (/--test_param_filter=\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g.test(args.toString())) {
-      let params = args.toString().match(/--test_param_filter=\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g)[0];
+    if (/\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g.test(paramsContent.toString())) {
+      let params = paramsContent.toString().match(/\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g)[0];
       decodeParams2Case(suite, params);
     } else {
-      // no filter or get invalid params, run all the cases
+      log("no filter or getting invalid params, run all the cases");
       addResizeUpLinearCase(suite, combiUpLinear);
       addResizeDownLinearCase(suite, combiDownLinear);
     }
     setBenchmarkSuite(suite);
     log(`Running ${totalCaseNum} tests from Resize`);
     suite.run({ 'async': true }); // run the benchmark
+  }
+
+  // init
+  let resizeFunc = [addResizeUpLinearCase, addResizeDownLinearCase];//, addResizeAreaFastCase];
+  let combinations = [combiUpLinear, combiDownLinear];//, combiAreaFast];
+
+  // set test filter params
+  if (isNodeJs) {
+    const args = process.argv.slice(2);
+    let paramsContent = '';
+    if (/--test_param_filter=\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g.test(args.toString())) {
+      paramsContent = args.toString().match(/\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g)[0];
+    }
+    genBenchmarkCase(paramsContent);
   } else {
-    let suite;
     runButton.onclick = function()　{
-      suite = new Benchmark.Suite;
-      totalCaseNum = 0;
-      currentCaseId = 0;
       let paramsContent = paramsElement.value;
-      if (/\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g.test(paramsContent.toString())) {
-        let params = paramsContent.toString().match(/\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g)[0];
-        decodeParams2Case(suite, params);
-      } else {
-        addResizeUpLinearCase(suite, combiUpLinear);
-        addResizeDownLinearCase(suite, combiDownLinear);
-      }
-      setBenchmarkSuite(suite);
-      log(`Running ${totalCaseNum} tests from Resize`);
-      suite.run({ 'async': true }); // run the benchmark
+      genBenchmarkCase(paramsContent);
       runButton.setAttribute("disabled", "disabled");
       runButton.setAttribute('class', 'btn btn-primary disabled');
       runButton.innerHTML = "Running";

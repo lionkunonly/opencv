@@ -586,7 +586,6 @@ static void parallel_for_impl(const cv::Range& range, const cv::ParallelLoopBody
         }
 
 #elif defined HAVE_PTHREADS_PF
-        parallel_pthreads_set_threads_num(4);
         parallel_for_pthreads(pbody.stripeRange(), pbody, pbody.stripeRange().size());
 
 #else

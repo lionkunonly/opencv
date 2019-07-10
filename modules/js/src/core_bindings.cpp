@@ -71,7 +71,7 @@
 #include <emscripten/bind.h>
 
 @INCLUDES@
-#include "../../../core/src/parallel_impl.hpp"
+#include "../../../modules/core/src/parallel_impl.hpp"
 
 using namespace emscripten;
 using namespace cv;

@@ -103,7 +103,6 @@ class Builder:
                "-DWITH_OPENNI2=OFF",
                "-DWITH_PNG=OFF",
                "-DWITH_TBB=OFF",
-               "-DWITH_PTHREADS_PF=ON",
                "-DWITH_TIFF=OFF",
                "-DWITH_V4L=OFF",
                "-DWITH_OPENCL=OFF",
@@ -145,6 +144,11 @@ class Builder:
         else:
             cmd.append("-DBUILD_DOCS=OFF")
 
+        if self.options.threads:
+            cmd.append("-DWITH_PTHREADS_PF=ON")
+        else:
+            cmd.append("-DWITH_PTHREADS_PF=OFF")
+
         flags = self.get_build_flags()
         if flags:
             cmd += ["-DCMAKE_C_FLAGS='%s'" % flags,
@@ -157,6 +161,10 @@ class Builder:
             flags += "-s WASM=1 "
         elif self.options.disable_wasm:
             flags += "-s WASM=0 "
+        if self.options.threads:
+            flags += "-s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=4 "
+        else:
+            flags += "-s USE_PTHREADS=0 "
         if self.options.enable_exception:
             flags += "-s DISABLE_EXCEPTION_CATCHING=0 "
         return flags
@@ -190,6 +198,7 @@ if __name__ == "__main__":
     parser.add_argument('--emscripten_dir', default=emscripten_dir, help="Path to Emscripten to use for build")
     parser.add_argument('--build_wasm', action="store_true", help="Build OpenCV.js in WebAssembly format")
     parser.add_argument('--disable_wasm', action="store_true", help="Build OpenCV.js in Asm.js format")
+    parser.add_argument('--threads', action="store_true", help="Build OpenCV.js with threads optimization")
     parser.add_argument('--build_test', action="store_true", help="Build tests")
     parser.add_argument('--build_doc', action="store_true", help="Build tutorials")
     parser.add_argument('--clean_build_dir', action="store_true", help="Clean build dir")

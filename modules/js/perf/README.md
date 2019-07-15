@@ -11,7 +11,7 @@
 For example, if you want to test the performance of cvtColor, please run `perf_cvtcolor.js` by node in terminal:
 
 ```sh
-node per_cvtcolor.js
+node perf_cvtcolor.js
 ```
 
 All tests of cvtColor will be run by above command.
@@ -19,5 +19,5 @@ All tests of cvtColor will be run by above command.
 If you just want to run one specific case, please use `--test_param_filter="()"` flag, like:
 
 ```sh
-node per_cvtcolor.js --test_param_filter="(1920x1080, COLOR_BGR2GRAY)"
+node perf_cvtcolor.js --test_param_filter="(1920x1080, COLOR_BGR2GRAY)"
 ```

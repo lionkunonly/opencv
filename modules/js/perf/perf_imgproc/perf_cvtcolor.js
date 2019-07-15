@@ -529,7 +529,6 @@ cv.onRuntimeInitialized = () => {
     let suite = new Benchmark.Suite;
     totalCaseNum = 0;
     currentCaseId = 0;
-    let paramsContent = paramsElement.value;
     if (/\([0-9]+x[0-9]+,[\ ]*\w+\)/g.test(paramsContent.toString())) {
       let params = paramsContent.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
       decodeParams2Case(suite, params);

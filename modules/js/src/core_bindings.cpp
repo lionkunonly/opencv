@@ -71,6 +71,7 @@
 #include <emscripten/bind.h>
 
 @INCLUDES@
+#include "../../../modules/core/src/parallel_impl.hpp"
 
 using namespace emscripten;
 using namespace cv;
@@ -620,6 +621,11 @@ EMSCRIPTEN_BINDINGS(binding_utils)
 #endif
 
     function("getBuildInformation", &binding_utils::getBuildInformation);
+
+#ifdef HAVE_PTHREADS_PF
+    function("parallel_pthreads_set_threads_num", &cv::parallel_pthreads_set_threads_num);
+    function("parallel_pthreads_get_threads_num", &cv::parallel_pthreads_get_threads_num);
+#endif
 
     constant("CV_8UC1", CV_8UC1);
     constant("CV_8UC2", CV_8UC2);

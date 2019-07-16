@@ -154,15 +154,12 @@ set(perf_dir ${CMAKE_CURRENT_SOURCE_DIR}/perf)
 
 set(opencv_perf_js_file_deps "")
 
-# message(STATUS "${opencv_perf_js_bin_dir}")
-
 # make sure the build directory exists
 file(MAKE_DIRECTORY "${opencv_perf_js_bin_dir}")
 
 # gather and copy specific files for js perf
 file(GLOB_RECURSE perf_files RELATIVE "${perf_dir}" "${perf_dir}/*")
 foreach(f ${perf_files})
-  # message(STATUS "copy ${perf_dir}/${f} ${opencv_perf_js_bin_dir}/${f}")
   add_custom_command(OUTPUT "${opencv_perf_js_bin_dir}/${f}"
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${perf_dir}/${f}" "${opencv_perf_js_bin_dir}/${f}"
                      DEPENDS "${perf_dir}/${f}"

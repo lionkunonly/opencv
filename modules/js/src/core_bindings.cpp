@@ -543,10 +543,10 @@ EMSCRIPTEN_BINDINGS(binding_utils)
         .field("distance", &cv::DMatch::distance);
 
     emscripten::value_array<cv::Scalar_<double>> ("Scalar")
-        .element(index<0>())
-        .element(index<1>())
-        .element(index<2>())
-        .element(index<3>());
+        .element(emscripten::index<0>())
+        .element(emscripten::index<1>())
+        .element(emscripten::index<2>())
+        .element(emscripten::index<3>());
 
     emscripten::value_object<binding_utils::MinMaxLoc>("MinMaxLoc")
         .field("minVal", &binding_utils::MinMaxLoc::minVal)

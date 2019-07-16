@@ -180,6 +180,9 @@ class Builder:
     def build_test(self):
         execute(["make", "-j", str(multiprocessing.cpu_count()), "opencv_js_test"])
 
+    def build_perf(self):
+        execute(["make", "-j", str(multiprocessing.cpu_count()), "opencv_js_perf"])
+
     def build_doc(self):
         execute(["make", "-j", str(multiprocessing.cpu_count()), "doxygen"])
 
@@ -200,6 +203,7 @@ if __name__ == "__main__":
     parser.add_argument('--disable_wasm', action="store_true", help="Build OpenCV.js in Asm.js format")
     parser.add_argument('--threads', action="store_true", help="Build OpenCV.js with threads optimization")
     parser.add_argument('--build_test', action="store_true", help="Build tests")
+    parser.add_argument('--build_perf', action="store_true", help="Build performance tests")
     parser.add_argument('--build_doc', action="store_true", help="Build tutorials")
     parser.add_argument('--clean_build_dir', action="store_true", help="Clean build dir")
     parser.add_argument('--skip_config', action="store_true", help="Skip cmake config")
@@ -248,6 +252,12 @@ if __name__ == "__main__":
         log.info("===== Building OpenCV.js tests")
         log.info("=====")
         builder.build_test()
+    
+    if args.build_perf:
+        log.info("=====")
+        log.info("===== Building OpenCV.js performance tests")
+        log.info("=====")
+        builder.build_perf()
 
     if args.build_doc:
         log.info("=====")
@@ -267,6 +277,11 @@ if __name__ == "__main__":
     if args.build_test:
         opencvjs_test_path = os.path.join(builder.build_dir, "bin", "tests.html")
         if check_file(opencvjs_test_path):
+            log.info("OpenCV.js tests location: %s", opencvjs_test_path)
+
+    if args.build_perf:
+        opencvjs_perf_path = os.path.join(builder.build_dir, "bin", "perf", "base.js")
+        if check_file(opencvjs_perf_path):
             log.info("OpenCV.js tests location: %s", opencvjs_test_path)
 
     if args.build_doc:

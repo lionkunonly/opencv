@@ -147,3 +147,26 @@ list(APPEND opencv_test_js_file_deps "${test_data_path}" "${opencv_test_js_bin_d
 
 add_custom_target(${PROJECT_NAME}_test ALL
                   DEPENDS ${OCV_JS_PATH} ${opencv_test_js_file_deps})
+
+# perf
+set(opencv_perf_js_bin_dir "${EXECUTABLE_OUTPUT_PATH}/perf")
+set(perf_dir ${CMAKE_CURRENT_SOURCE_DIR}/perf)
+
+set(opencv_perf_js_file_deps "")
+
+# make sure the build directory exists
+file(MAKE_DIRECTORY "${opencv_perf_js_bin_dir}")
+
+# gather and copy specific files for js perf
+file(GLOB_RECURSE perf_files RELATIVE "${perf_dir}" "${perf_dir}/*")
+foreach(f ${perf_files})
+  add_custom_command(OUTPUT "${opencv_perf_js_bin_dir}/${f}"
+                     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${perf_dir}/${f}" "${opencv_perf_js_bin_dir}/${f}"
+                     DEPENDS "${perf_dir}/${f}"
+                     COMMENT "Copying ${f}"
+                    )
+  list(APPEND opencv_perf_js_file_deps "${perf_dir}/${f}" "${opencv_perf_js_bin_dir}/${f}")
+endforeach()
+
+add_custom_target(${PROJECT_NAME}_perf ALL
+                  DEPENDS ${OCV_JS_PATH} ${opencv_perf_js_file_deps})

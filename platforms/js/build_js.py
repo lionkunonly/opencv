@@ -281,9 +281,10 @@ if __name__ == "__main__":
             log.info("OpenCV.js tests location: %s", opencvjs_test_path)
 
     if args.build_perf:
-        opencvjs_perf_path = os.path.join(builder.build_dir, "bin", "perf", "base.js")
-        if check_file(opencvjs_perf_path):
-            log.info("OpenCV.js tests location: %s", opencvjs_test_path)
+        opencvjs_perf_path = os.path.join(builder.build_dir, "bin", "perf")
+        opencvjs_perf_base_path = os.path.join(builder.build_dir, "bin", "perf", "base.js")
+        if check_file(opencvjs_perf_base_path):
+            log.info("OpenCV.js performance tests location: %s", opencvjs_perf_path)
 
     if args.build_doc:
         opencvjs_tutorial_path = find_file("tutorial_js_root.html", os.path.join(builder.build_dir, "doc", "doxygen", "html"))

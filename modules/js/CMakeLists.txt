@@ -80,6 +80,11 @@ add_custom_command(
 
 add_definitions("-std=c++11")
 
+OCV_OPTION(BUILD_WASM_INTRIN_TESTS "Build WASM intrin tests" OFF )
+if(BUILD_WASM_INTRIN_TESTS)
+  add_definitions(-DTEST_WASM_INTRIN)
+endif()
+
 link_libraries(${OPENCV_MODULE_${the_module}_DEPS})
 
 ocv_add_executable(${the_module} ${bindings_cpp})

@@ -82,7 +82,17 @@ add_definitions("-std=c++11")
 
 link_libraries(${OPENCV_MODULE_${the_module}_DEPS})
 
-ocv_add_executable(${the_module} ${bindings_cpp})
+OCV_OPTION(BUILD_WASM_INTRIN_TESTS "Build WASM intrin tests" OFF )
+if(BUILD_WASM_INTRIN_TESTS)
+  add_definitions(-DTEST_WASM_INTRIN)
+  ocv_module_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../ts/include")
+  ocv_module_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../imgcodecs/include")
+  ocv_module_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../videoio/include")
+  ocv_module_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../highgui/include")
+  ocv_add_executable(${the_module} ${bindings_cpp} "${CMAKE_CURRENT_SOURCE_DIR}/../ts/src/ts_gtest.cpp")
+else()
+  ocv_add_executable(${the_module} ${bindings_cpp})
+endif()
 
 set(COMPILE_FLAGS "")
 if(NOT CMAKE_CXX_COMPILER_ID MATCHES "MSVC")

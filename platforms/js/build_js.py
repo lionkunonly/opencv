@@ -150,6 +150,11 @@ class Builder:
         else:
             cmd.append("-DWITH_PTHREADS_PF=OFF")
 
+        if self.options.build_wasm_intrin_test:
+            cmd.append("-DBUILD_WASM_INTRIN_TESTS=ON")
+        else:
+            cmd.append("-DBUILD_WASM_INTRIN_TESTS=OFF")
+
         flags = self.get_build_flags()
         if flags:
             cmd += ["-DCMAKE_C_FLAGS='%s'" % flags,
@@ -210,6 +215,7 @@ if __name__ == "__main__":
     parser.add_argument('--skip_config', action="store_true", help="Skip cmake config")
     parser.add_argument('--config_only', action="store_true", help="Only do cmake config")
     parser.add_argument('--enable_exception', action="store_true", help="Enable exception handling")
+    parser.add_argument('--build_wasm_intrin_test', default=False, action="store_true", help="Build WASM intrin tests")
     args = parser.parse_args()
 
     log.basicConfig(format='%(message)s', level=log.DEBUG)

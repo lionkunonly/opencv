@@ -73,6 +73,17 @@
 @INCLUDES@
 #include "../../../modules/core/src/parallel_impl.hpp"
 
+#ifdef TEST_WASM_INTRIN
+#include "../../../modules/core/include/opencv2/core/hal/intrin.hpp"
+#include "../../../modules/core/include/opencv2/core/utils/trace.hpp"
+#include "../../../modules/ts/include/opencv2/ts/ts_gtest.h"
+namespace cv {
+namespace hal {
+#include "../../../modules/core/test/test_intrin_utils.hpp"
+}
+}
+#endif
+
 using namespace emscripten;
 using namespace cv;
 
@@ -369,6 +380,51 @@ namespace binding_utils
     std::string getBuildInformation() {
         return cv::getBuildInformation();
     }
+
+#ifdef TEST_WASM_INTRIN
+    void test_hal_intrin_uint8() {
+        cv::hal::test_hal_intrin_uint8();
+    }
+    void test_hal_intrin_int8() {
+        cv::hal::test_hal_intrin_int8();
+    }
+    void test_hal_intrin_uint16() {
+        cv::hal::test_hal_intrin_uint16();
+    }
+    void test_hal_intrin_int16() {
+        cv::hal::test_hal_intrin_int16();
+    }
+    void test_hal_intrin_uint32() {
+        cv::hal::test_hal_intrin_uint32();
+    }
+    void test_hal_intrin_int32() {
+        cv::hal::test_hal_intrin_int32();
+    }
+    void test_hal_intrin_uint64() {
+        cv::hal::test_hal_intrin_uint64();
+    }
+    void test_hal_intrin_int64() {
+        cv::hal::test_hal_intrin_int64();
+    }
+    void test_hal_intrin_float32() {
+        cv::hal::test_hal_intrin_float32();
+    }
+    void test_hal_intrin_float64() {
+        cv::hal::test_hal_intrin_float64();
+    }
+    void test_hal_intrin_all() {
+        cv::hal::test_hal_intrin_uint8();
+        cv::hal::test_hal_intrin_int8();
+        cv::hal::test_hal_intrin_uint16();
+        cv::hal::test_hal_intrin_int16();
+        cv::hal::test_hal_intrin_uint32();
+        cv::hal::test_hal_intrin_int32();
+        cv::hal::test_hal_intrin_uint64();
+        cv::hal::test_hal_intrin_int64();
+        cv::hal::test_hal_intrin_float32();
+        cv::hal::test_hal_intrin_float64();
+    }
+#endif
 }
 
 EMSCRIPTEN_BINDINGS(binding_utils)
@@ -625,6 +681,20 @@ EMSCRIPTEN_BINDINGS(binding_utils)
 #ifdef HAVE_PTHREADS_PF
     function("parallel_pthreads_set_threads_num", &cv::parallel_pthreads_set_threads_num);
     function("parallel_pthreads_get_threads_num", &cv::parallel_pthreads_get_threads_num);
+#endif
+
+#ifdef TEST_WASM_INTRIN
+    function("test_hal_intrin_uint8", &binding_utils::test_hal_intrin_uint8);
+    function("test_hal_intrin_int8", &binding_utils::test_hal_intrin_int8);
+    function("test_hal_intrin_uint16", &binding_utils::test_hal_intrin_uint16);
+    function("test_hal_intrin_int16", &binding_utils::test_hal_intrin_int16);
+    function("test_hal_intrin_uint32", &binding_utils::test_hal_intrin_uint32);
+    function("test_hal_intrin_int32", &binding_utils::test_hal_intrin_int32);
+    function("test_hal_intrin_uint64", &binding_utils::test_hal_intrin_uint64);
+    function("test_hal_intrin_int64", &binding_utils::test_hal_intrin_int64);
+    function("test_hal_intrin_float32", &binding_utils::test_hal_intrin_float32);
+    function("test_hal_intrin_float64", &binding_utils::test_hal_intrin_float64);
+    function("test_hal_intrin_all", &binding_utils::test_hal_intrin_all);
 #endif
 
     constant("CV_8UC1", CV_8UC1);

@@ -76,20 +76,9 @@
 #ifdef TEST_WASM_INTRIN
 #include "../../../modules/core/include/opencv2/core/hal/intrin.hpp"
 #include "../../../modules/core/include/opencv2/core/utils/trace.hpp"
-#include <iostream>
+#include "../../../modules/ts/include/opencv2/ts/ts_gtest.h"
 namespace cv {
 namespace hal {
-#define SCOPED_TRACE(x)
-
-#define LOG(result) std::cout << __PRETTY_FUNCTION__ \
-                              << " (" << __FILE__ << ":" << __LINE__ << "): " \
-                              << ((result) ? "PASS" : "FAIL") << std::endl
-
-#define EXPECT_FLOAT_EQ(a, b) LOG(((a)==(b)))
-#define EXPECT_DOUBLE_EQ(a, b) LOG(((a)==(b)))
-#define EXPECT_EQ(a, b) LOG(((a)==(b)))
-#define EXPECT_NE(a, b) LOG(((a)!=(b)))
-
 #include "../../../modules/core/test/test_intrin_utils.hpp"
 }
 }
@@ -423,11 +412,18 @@ namespace binding_utils
     void test_hal_intrin_float64() {
         cv::hal::test_hal_intrin_float64();
     }
-    /*
-    void test_hal_intrin_float16() {
-        cv::hal::test_hal_intrin_float16();
+    void test_hal_intrin_all() {
+        cv::hal::test_hal_intrin_uint8();
+        cv::hal::test_hal_intrin_int8();
+        cv::hal::test_hal_intrin_uint16();
+        cv::hal::test_hal_intrin_int16();
+        cv::hal::test_hal_intrin_uint32();
+        cv::hal::test_hal_intrin_int32();
+        cv::hal::test_hal_intrin_uint64();
+        cv::hal::test_hal_intrin_int64();
+        cv::hal::test_hal_intrin_float32();
+        cv::hal::test_hal_intrin_float64();
     }
-    */
 #endif
 }
 
@@ -698,7 +694,7 @@ EMSCRIPTEN_BINDINGS(binding_utils)
     function("test_hal_intrin_int64", &binding_utils::test_hal_intrin_int64);
     function("test_hal_intrin_float32", &binding_utils::test_hal_intrin_float32);
     function("test_hal_intrin_float64", &binding_utils::test_hal_intrin_float64);
-    // function("test_hal_intrin_float16", &binding_utils::test_hal_intrin_float16);
+    function("test_hal_intrin_all", &binding_utils::test_hal_intrin_all);
 #endif
 
     constant("CV_8UC1", CV_8UC1);

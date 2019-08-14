@@ -42,20 +42,22 @@
 //
 //M*/
 
-#ifndef OPENCV_HAL_INTRIN_CPP_HPP
-#define OPENCV_HAL_INTRIN_CPP_HPP
+#ifndef OPENCV_HAL_INTRIN_WASM_HPP
+#define OPENCV_HAL_INTRIN_WASM_HPP
 
 #include <limits>
 #include <cstring>
 #include <algorithm>
 #include "opencv2/core/saturate.hpp"
 
+#define CV_SIMD128 1
+#define CV_SIMD128_64F 1
+#define CV_SIMD128_FP16 0
+
 namespace cv
 {
 
-#ifndef CV_DOXYGEN
 CV_CPU_OPTIMIZATION_HAL_NAMESPACE_BEGIN
-#endif
 
 /** @addtogroup core_hal_intrin
 
@@ -1486,7 +1488,7 @@ Scheme:
 @endcode
 Pointer can be unaligned. */
 template<typename _Tp, int n>
-inline void v_store(_Tp* ptr, const v_reg<_Tp, n>& a)
+inline void v_store(_Tp* ptr, const v_reg<_Tp, n>& a, hal::StoreMode /*mode*/ = hal::STORE_UNALIGNED)
 {
     for( int i = 0; i < n; i++ )
         ptr[i] = a.s[i];
@@ -1712,10 +1714,11 @@ template<int n> inline v_reg<int, n*2> v_round(const v_reg<double, n>& a)
     return c;
 }
 
+
 /** @overload */
 template<int n> inline v_reg<int, n*2> v_floor(const v_reg<double, n>& a)
 {
-    v_reg<int, n> c;
+    v_reg<int, n*2> c;
     for( int i = 0; i < n; i++ )
     {
         c.s[i] = cvFloor(a.s[i]);
@@ -1727,7 +1730,7 @@ template<int n> inline v_reg<int, n*2> v_floor(const v_reg<double, n>& a)
 /** @overload */
 template<int n> inline v_reg<int, n*2> v_ceil(const v_reg<double, n>& a)
 {
-    v_reg<int, n> c;
+    v_reg<int, n*2> c;
     for( int i = 0; i < n; i++ )
     {
         c.s[i] = cvCeil(a.s[i]);
@@ -1739,10 +1742,10 @@ template<int n> inline v_reg<int, n*2> v_ceil(const v_reg<double, n>& a)
 /** @overload */
 template<int n> inline v_reg<int, n*2> v_trunc(const v_reg<double, n>& a)
 {
-    v_reg<int, n> c;
+    v_reg<int, n*2> c;
     for( int i = 0; i < n; i++ )
     {
-        c.s[i] = cvCeil(a.s[i]);
+        c.s[i] = (int)(a.s[i]);
         c.s[i+n] = 0;
     }
     return c;
@@ -1756,6 +1759,17 @@ template<int n> inline v_reg<float, n> v_cvt_f32(const v_reg<int, n>& a)
     v_reg<float, n> c;
     for( int i = 0; i < n; i++ )
         c.s[i] = (float)a.s[i];
+    return c;
+}
+
+template<int n> inline v_reg<float, n*2> v_cvt_f32(const v_reg<double, n>& a)
+{
+    v_reg<float, n*2> c;
+    for( int i = 0; i < n; i++ )
+    {
+        c.s[i] = (float)a.s[i];
+        c.s[i+n] = 0;
+    }
     return c;
 }
 
@@ -1773,22 +1787,38 @@ template<int n> inline v_reg<float, n*2> v_cvt_f32(const v_reg<double, n>& a, co
 /** @brief Convert to double
 
 Supported input type is cv::v_int32x4. */
-template<int n> inline v_reg<double, n> v_cvt_f64(const v_reg<int, n*2>& a)
+inline v_float64x2 v_cvt_f64(const v_int32x4& a)
 {
-    v_reg<double, n> c;
-    for( int i = 0; i < n; i++ )
+    v_float64x2 c;
+    for( int i = 0; i < 2; i++ )
         c.s[i] = (double)a.s[i];
+    return c;
+}
+
+inline v_float64x2 v_cvt_f64_high(const v_int32x4& a)
+{
+    v_float64x2 c;
+    for( int i = 0; i < 2; i++ )
+        c.s[i] = (double)a.s[i+2];
     return c;
 }
 
 /** @brief Convert to double
 
 Supported input type is cv::v_float32x4. */
-template<int n> inline v_reg<double, n> v_cvt_f64(const v_reg<float, n*2>& a)
+inline v_float64x2 v_cvt_f64(const v_float32x4& a)
 {
-    v_reg<double, n> c;
-    for( int i = 0; i < n; i++ )
+    v_float64x2 c;
+    for( int i = 0; i < 2; i++ )
         c.s[i] = (double)a.s[i];
+    return c;
+}
+
+inline v_float64x2 v_cvt_f64_high(const v_float32x4& a)
+{
+    v_float64x2 c;
+    for( int i = 0; i < 2; i++ )
+        c.s[i] = (double)a.s[i+2];
     return c;
 }
 
@@ -1870,7 +1900,7 @@ template<int n> inline void v_lut_deinterleave(const double* tab, const v_reg<in
 
 template<typename _Tp, int n> inline v_reg<_Tp, n> v_interleave_pairs(const v_reg<_Tp, n>& vec)
 {
-    v_reg<float, n> c;
+    v_reg<_Tp, n> c;
     for (int i = 0; i < n/4; i++)
     {
         c.s[4*i  ] = vec.s[4*i  ];
@@ -1883,7 +1913,7 @@ template<typename _Tp, int n> inline v_reg<_Tp, n> v_interleave_pairs(const v_re
 
 template<typename _Tp, int n> inline v_reg<_Tp, n> v_interleave_quads(const v_reg<_Tp, n>& vec)
 {
-    v_reg<float, n> c;
+    v_reg<_Tp, n> c;
     for (int i = 0; i < n/8; i++)
     {
         c.s[8*i  ] = vec.s[8*i  ];
@@ -1900,7 +1930,7 @@ template<typename _Tp, int n> inline v_reg<_Tp, n> v_interleave_quads(const v_re
 
 template<typename _Tp, int n> inline v_reg<_Tp, n> v_pack_triplets(const v_reg<_Tp, n>& vec)
 {
-    v_reg<float, n> c;
+    v_reg<_Tp, n> c;
     for (int i = 0; i < n/4; i++)
     {
         c.s[3*i  ] = vec.s[4*i  ];
@@ -2345,7 +2375,7 @@ v_load_expand(const float16_t* ptr)
 }
 
 inline void
-v_pack_store(float16_t* ptr, v_reg<float, V_TypeTraits<float>::nlanes128>& v)
+v_pack_store(float16_t* ptr, const v_reg<float, V_TypeTraits<float>::nlanes128>& v)
 {
     for( int i = 0; i < v.nlanes; i++ )
     {
@@ -2362,14 +2392,12 @@ inline void v_cleanup() {}
 //! @brief Check CPU capability of SIMD operation
 static inline bool hasSIMD128()
 {
-    return false;
+    return true;
 }
 
 //! @}
 
-#ifndef CV_DOXYGEN
 CV_CPU_OPTIMIZATION_HAL_NAMESPACE_END
-#endif
 }
 
 #endif

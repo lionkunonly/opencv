@@ -150,6 +150,11 @@ class Builder:
         else:
             cmd.append("-DWITH_PTHREADS_PF=OFF")
 
+        if self.options.simd:
+            cmd.append("-DCV_ENABLE_INTRINSICS=ON")
+        else:
+            cmd.append("-DCV_ENABLE_INTRINSICS=OFF")
+
         if self.options.build_wasm_intrin_test:
             cmd.append("-DBUILD_WASM_INTRIN_TESTS=ON")
         else:
@@ -173,6 +178,8 @@ class Builder:
             flags += "-s USE_PTHREADS=0 "
         if self.options.enable_exception:
             flags += "-s DISABLE_EXCEPTION_CATCHING=0 "
+        if self.options.simd:
+            flags += "-msimd128 "
         return flags
 
     def config(self):
@@ -208,6 +215,7 @@ if __name__ == "__main__":
     parser.add_argument('--build_wasm', action="store_true", help="Build OpenCV.js in WebAssembly format")
     parser.add_argument('--disable_wasm', action="store_true", help="Build OpenCV.js in Asm.js format")
     parser.add_argument('--threads', action="store_true", help="Build OpenCV.js with threads optimization")
+    parser.add_argument('--simd', action="store_true", help="Build OpenCV.js with SIMD optimization")
     parser.add_argument('--build_test', action="store_true", help="Build tests")
     parser.add_argument('--build_perf', action="store_true", help="Build performance tests")
     parser.add_argument('--build_doc', action="store_true", help="Build tutorials")

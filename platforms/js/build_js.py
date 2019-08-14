@@ -178,6 +178,8 @@ class Builder:
             flags += "-s USE_PTHREADS=0 "
         if self.options.enable_exception:
             flags += "-s DISABLE_EXCEPTION_CATCHING=0 "
+        if self.options.simd:
+            flags += "-msimd128 "
         return flags
 
     def config(self):

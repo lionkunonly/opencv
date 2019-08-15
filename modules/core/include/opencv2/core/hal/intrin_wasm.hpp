@@ -3337,25 +3337,19 @@ inline v_uint16x8 v_mul_hi(const v_uint16x8& a, const v_uint16x8& b)
 
 inline v_int32x4 v_dotprod(const v_int16x8& a, const v_int16x8& b)
 {
-    v_int32x4 a0, a1, b0, b1;
-    v_expand(a, a0, a1);
-    v_expand(b, b0, b1);
-    v128_t c = wasm_i32x4_mul(a0.val, b0.val);
-    v128_t d = wasm_i32x4_mul(a1.val, b1.val);
-    v128_t e = wasm_v8x16_shuffle(c, d, 0,1,2,3,8,9,10,11,16,17,18,19,24,25,26,27);
-    v128_t f = wasm_v8x16_shuffle(c, d, 4,5,6,7,12,13,14,15,20,21,22,23,28,29,30,31);
+    v128_t c = wasm_i16x8_mul(a.val, b.val);
+    v128_t d = wasm_i16x8_splat(0);
+    v128_t e = wasm_v8x16_shuffle(c, d, 0,1,16,17,4,5,20,21,8,9,24,25,12,13,28,29);
+    v128_t f = wasm_v8x16_shuffle(c, d, 2,3,16,17,6,7,20,21,10,11,24,25,14,15,28,29);
     return v_int32x4(wasm_i32x4_add(e, f));
 }
 
 inline v_int32x4 v_dotprod(const v_int16x8& a, const v_int16x8& b, const v_int32x4& c)
 {
-    v_int32x4 a0, a1, b0, b1;
-    v_expand(a, a0, a1);
-    v_expand(b, b0, b1);
-    v128_t d = wasm_i32x4_mul(a0.val, b0.val);
-    v128_t e = wasm_i32x4_mul(a1.val, b1.val);
-    v128_t f = wasm_v8x16_shuffle(d, e, 0,1,2,3,8,9,10,11,16,17,18,19,24,25,26,27);
-    v128_t g = wasm_v8x16_shuffle(d, e, 4,5,6,7,12,13,14,15,20,21,22,23,28,29,30,31);
+    v128_t d = wasm_i16x8_mul(a.val, b.val);
+    v128_t e = wasm_i16x8_splat(0);
+    v128_t f = wasm_v8x16_shuffle(d, e, 0,1,16,17,4,5,20,21,8,9,24,25,12,13,28,29);
+    v128_t g = wasm_v8x16_shuffle(d, e, 2,3,16,17,6,7,20,21,10,11,24,25,14,15,28,29);
     return v_int32x4(wasm_i32x4_add(wasm_i32x4_add(f, g), c.val));
 }
 
@@ -4138,17 +4132,17 @@ inline v_int32x4 v_ceil(const v_float32x4& a)
 inline v_int32x4 v_trunc(const v_float32x4& a)
 { return v_int32x4(wasm_trunc_saturate_i32x4_f32x4(a.val)); }
 
-#define OPENCV_HAL_IMPL_MATH_FUNC(func, cfunc, _Tpvec, _Tpnvec, _Tp, _Tpn) \
+#define OPENCV_HAL_IMPL_WASM_MATH_FUNC(func, cfunc, _Tpvec, _Tpnvec, _Tp, _Tpn) \
 inline _Tpnvec func(const _Tpvec& a) \
 { \
     fallback::_Tpvec a_(a); \
     return fallback::func(a_); \
 }
 
-OPENCV_HAL_IMPL_MATH_FUNC(v_round, cvRound, v_float64x2, v_int32x4, double, int)
-OPENCV_HAL_IMPL_MATH_FUNC(v_floor, cvFloor, v_float64x2, v_int32x4, double, int)
-OPENCV_HAL_IMPL_MATH_FUNC(v_ceil, cvCeil, v_float64x2, v_int32x4, double, int)
-OPENCV_HAL_IMPL_MATH_FUNC(v_trunc, int, v_float64x2, v_int32x4, double, int)
+OPENCV_HAL_IMPL_WASM_MATH_FUNC(v_round, cvRound, v_float64x2, v_int32x4, double, int)
+OPENCV_HAL_IMPL_WASM_MATH_FUNC(v_floor, cvFloor, v_float64x2, v_int32x4, double, int)
+OPENCV_HAL_IMPL_WASM_MATH_FUNC(v_ceil, cvCeil, v_float64x2, v_int32x4, double, int)
+OPENCV_HAL_IMPL_WASM_MATH_FUNC(v_trunc, int, v_float64x2, v_int32x4, double, int)
 
 inline v_int32x4 v_round(const v_float64x2& a, const v_float64x2& b)
 {

@@ -2769,87 +2769,69 @@ OPENCV_HAL_IMPL_WASM_INITVEC(v_float32x4, float, f32, f32x4, float)
 OPENCV_HAL_IMPL_WASM_INITVEC(v_float64x2, double, f64, f64x2, double)
 
 //////////////// PACK ///////////////
-#define OPENCV_HAL_IMPL_C_PACK(_Tpvec, _Tp, _Tpnvec, _Tpn, pack_suffix, cast) \
+#define OPENCV_HAL_IMPL_WASM_PACK(_Tpvec, _Tp, _Tpnvec, _Tpn, pack_suffix, cast) \
 inline _Tpnvec v_##pack_suffix(const _Tpvec& a, const _Tpvec& b) \
 { \
-    _Tp p[_Tpnvec::nlanes]; \
-    wasm_v128_store(p, a.val); \
-    wasm_v128_store(p+_Tpvec::nlanes, b.val); \
-    _Tpn c[_Tpnvec::nlanes]; \
-    for( int i = 0; i < _Tpnvec::nlanes; i++ ) \
-    { \
-        c[i] = cast<_Tpn>(p[i]); \
-    } \
-    return _Tpnvec(wasm_v128_load(c)); \
+    fallback::_Tpvec a_(a), b_(b); \
+    return fallback::v_##pack_suffix(a_, b_); \
 }
 
-OPENCV_HAL_IMPL_C_PACK(v_uint16x8, ushort, v_uint8x16, uchar, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_PACK(v_int16x8, short, v_int8x16, schar, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_PACK(v_uint32x4, unsigned, v_uint16x8, ushort, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_PACK(v_int32x4, int, v_int16x8, short, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_PACK(v_uint64x2, uint64, v_uint32x4, unsigned, pack, static_cast)
-OPENCV_HAL_IMPL_C_PACK(v_int64x2, int64, v_int32x4, int, pack, static_cast)
-OPENCV_HAL_IMPL_C_PACK(v_int16x8, short, v_uint8x16, uchar, pack_u, saturate_cast)
-OPENCV_HAL_IMPL_C_PACK(v_int32x4, int, v_uint16x8, ushort, pack_u, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK(v_uint16x8, ushort, v_uint8x16, uchar, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK(v_int16x8, short, v_int8x16, schar, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK(v_uint32x4, unsigned, v_uint16x8, ushort, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK(v_int32x4, int, v_int16x8, short, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK(v_uint64x2, uint64, v_uint32x4, unsigned, pack, static_cast)
+OPENCV_HAL_IMPL_WASM_PACK(v_int64x2, int64, v_int32x4, int, pack, static_cast)
+OPENCV_HAL_IMPL_WASM_PACK(v_int16x8, short, v_uint8x16, uchar, pack_u, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK(v_int32x4, int, v_uint16x8, ushort, pack_u, saturate_cast)
 
-#define OPENCV_HAL_IMPL_C_RSHR_PACK(_Tpvec, _Tp, _Tpnvec, _Tpn, pack_suffix, cast) \
+#define OPENCV_HAL_IMPL_WASM_RSHR_PACK(_Tpvec, _Tp, _Tpnvec, _Tpn, pack_suffix, cast) \
 template<int n> inline _Tpnvec v_rshr_##pack_suffix(const _Tpvec& a, const _Tpvec& b) \
 { \
-    _Tp p[_Tpnvec::nlanes]; \
-    wasm_v128_store(p, a.val); \
-    wasm_v128_store(p+_Tpvec::nlanes, b.val); \
-    _Tpn c[_Tpnvec::nlanes]; \
-    for( int i = 0; i < _Tpnvec::nlanes; i++ ) \
-    { \
-        c[i] = cast<_Tpn>((p[i] + ((_Tp)1 << (n - 1))) >> n); \
-    } \
-    return _Tpnvec(wasm_v128_load(c)); \
+    fallback::_Tpvec a_(a), b_(b); \
+    return fallback::v_rshr_##pack_suffix<n>(a_, b_); \
 }
 
-OPENCV_HAL_IMPL_C_RSHR_PACK(v_uint16x8, ushort, v_uint8x16, uchar, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK(v_int16x8, short, v_int8x16, schar, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK(v_uint32x4, unsigned, v_uint16x8, ushort, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK(v_int32x4, int, v_int16x8, short, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK(v_uint64x2, uint64, v_uint32x4, unsigned, pack, static_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK(v_int64x2, int64, v_int32x4, int, pack, static_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK(v_int16x8, short, v_uint8x16, uchar, pack_u, saturate_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK(v_int32x4, int, v_uint16x8, ushort, pack_u, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK(v_uint16x8, ushort, v_uint8x16, uchar, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK(v_int16x8, short, v_int8x16, schar, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK(v_uint32x4, unsigned, v_uint16x8, ushort, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK(v_int32x4, int, v_int16x8, short, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK(v_uint64x2, uint64, v_uint32x4, unsigned, pack, static_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK(v_int64x2, int64, v_int32x4, int, pack, static_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK(v_int16x8, short, v_uint8x16, uchar, pack_u, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK(v_int32x4, int, v_uint16x8, ushort, pack_u, saturate_cast)
 
-#define OPENCV_HAL_IMPL_C_PACK_STORE(_Tpvec, _Tp, _Tpnvec, _Tpn, pack_suffix, cast) \
+#define OPENCV_HAL_IMPL_WASM_PACK_STORE(_Tpvec, _Tp, _Tpnvec, _Tpn, pack_suffix, cast) \
 inline void v_##pack_suffix##_store(_Tpn* ptr, const _Tpvec& a) \
 { \
-    _Tp p[_Tpvec::nlanes]; \
-    wasm_v128_store(p, a.val); \
-    for( int i = 0; i < _Tpvec::nlanes; i++ ) \
-        ptr[i] = cast<_Tpn>(p[i]); \
+    fallback::_Tpvec a_(a); \
+    fallback::v_##pack_suffix##_store(ptr, a_); \
 }
 
-OPENCV_HAL_IMPL_C_PACK_STORE(v_uint16x8, ushort, v_uint8x16, uchar, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_PACK_STORE(v_int16x8, short, v_int8x16, schar, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_PACK_STORE(v_uint32x4, unsigned, v_uint16x8, ushort, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_PACK_STORE(v_int32x4, int, v_int16x8, short, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_PACK_STORE(v_uint64x2, uint64, v_uint32x4, unsigned, pack, static_cast)
-OPENCV_HAL_IMPL_C_PACK_STORE(v_int64x2, int64, v_int32x4, int, pack, static_cast)
-OPENCV_HAL_IMPL_C_PACK_STORE(v_int16x8, short, v_uint8x16, uchar, pack_u, saturate_cast)
-OPENCV_HAL_IMPL_C_PACK_STORE(v_int32x4, int, v_uint16x8, ushort, pack_u, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK_STORE(v_uint16x8, ushort, v_uint8x16, uchar, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK_STORE(v_int16x8, short, v_int8x16, schar, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK_STORE(v_uint32x4, unsigned, v_uint16x8, ushort, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK_STORE(v_int32x4, int, v_int16x8, short, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK_STORE(v_uint64x2, uint64, v_uint32x4, unsigned, pack, static_cast)
+OPENCV_HAL_IMPL_WASM_PACK_STORE(v_int64x2, int64, v_int32x4, int, pack, static_cast)
+OPENCV_HAL_IMPL_WASM_PACK_STORE(v_int16x8, short, v_uint8x16, uchar, pack_u, saturate_cast)
+OPENCV_HAL_IMPL_WASM_PACK_STORE(v_int32x4, int, v_uint16x8, ushort, pack_u, saturate_cast)
 
-#define OPENCV_HAL_IMPL_C_RSHR_PACK_STORE(_Tpvec, _Tp, _Tpnvec, _Tpn, pack_suffix, cast) \
+#define OPENCV_HAL_IMPL_WASM_RSHR_PACK_STORE(_Tpvec, _Tp, _Tpnvec, _Tpn, pack_suffix, cast) \
 template<int n> inline void v_rshr_##pack_suffix##_store(_Tpn* ptr, const _Tpvec& a) \
 { \
-    _Tp p[_Tpvec::nlanes]; \
-    wasm_v128_store(p, a.val); \
-    for( int i = 0; i < _Tpvec::nlanes; i++ ) \
-        ptr[i] = cast<_Tpn>((p[i] + ((_Tp)1 << (n - 1))) >> n); \
+    fallback::_Tpvec a_(a); \
+    fallback::v_rshr_##pack_suffix##_store<n>(ptr, a_); \
 }
 
-OPENCV_HAL_IMPL_C_RSHR_PACK_STORE(v_uint16x8, ushort, v_uint8x16, uchar, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK_STORE(v_int16x8, short, v_int8x16, schar, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK_STORE(v_uint32x4, unsigned, v_uint16x8, ushort, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK_STORE(v_int32x4, int, v_int16x8, short, pack, saturate_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK_STORE(v_uint64x2, uint64, v_uint32x4, unsigned, pack, static_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK_STORE(v_int64x2, int64, v_int32x4, int, pack, static_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK_STORE(v_int16x8, short, v_uint8x16, uchar, pack_u, saturate_cast)
-OPENCV_HAL_IMPL_C_RSHR_PACK_STORE(v_int32x4, int, v_uint16x8, ushort, pack_u, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK_STORE(v_uint16x8, ushort, v_uint8x16, uchar, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK_STORE(v_int16x8, short, v_int8x16, schar, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK_STORE(v_uint32x4, unsigned, v_uint16x8, ushort, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK_STORE(v_int32x4, int, v_int16x8, short, pack, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK_STORE(v_uint64x2, uint64, v_uint32x4, unsigned, pack, static_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK_STORE(v_int64x2, int64, v_int32x4, int, pack, static_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK_STORE(v_int16x8, short, v_uint8x16, uchar, pack_u, saturate_cast)
+OPENCV_HAL_IMPL_WASM_RSHR_PACK_STORE(v_int32x4, int, v_uint16x8, ushort, pack_u, saturate_cast)
 
 inline v_uint8x16 v_pack_b(const v_uint16x8& a, const v_uint16x8& b)
 {
@@ -3098,11 +3080,8 @@ inline v_float32x4 v_sqrt(const v_float32x4& x)
     // #ifdef __wasm_unimplemented_simd128__
     // return v_float32x4(wasm_f32x4_sqrt(x.val));
     // #else
-    const int N = 4;
-    float buf[N];
-    wasm_v128_store(buf, x.val);
-    for( int i = 0; i < N; i++ ) buf[i] = std::sqrt(buf[i]);
-    return v_float32x4(wasm_v128_load(buf));
+    fallback::v_float32x4 x_(x);
+    return fallback::v_sqrt(x_);
     // #endif
 }
 
@@ -3112,11 +3091,8 @@ inline v_float32x4 v_invsqrt(const v_float32x4& x)
     // const v128_t _1_0 = wasm_f32x4_splat(1.0);
     // return v_float32x4(wasm_f32x4_div(_1_0, wasm_f32x4_sqrt(x.val)));
     // #else
-    const int N = 4;
-    float buf[N];
-    wasm_v128_store(buf, x.val);
-    for( int i = 0; i < N; i++ ) buf[i] = 1.f/std::sqrt(buf[i]);
-    return v_float32x4(wasm_v128_load(buf));
+    fallback::v_float32x4 x_(x);
+    return fallback::v_invsqrt(x_);
     // #endif
 }
 
@@ -3125,11 +3101,8 @@ inline v_float64x2 v_sqrt(const v_float64x2& x)
     // #ifdef __wasm_unimplemented_simd128__
     // return v_float64x2(wasm_f64x2_sqrt(x.val));
     // #else
-    const int N = 2;
-    double buf[N];
-    wasm_v128_store(buf, x.val);
-    for( int i = 0; i < N; i++ ) buf[i] = std::sqrt(buf[i]);
-    return v_float64x2(wasm_v128_load(buf));
+    fallback::v_float64x2 x_(x);
+    return fallback::v_sqrt(x_);
     // #endif
 }
 
@@ -3139,11 +3112,8 @@ inline v_float64x2 v_invsqrt(const v_float64x2& x)
     // const v128_t _1_0 = wasm_f64x2_splat(1.0);
     // return v_float64x2(wasm_f64x2_div(_1_0, wasm_f64x2_sqrt(x.val)));
     // #else
-    const int N = 2;
-    double buf[N];
-    wasm_v128_store(buf, x.val);
-    for( int i = 0; i < N; i++ ) buf[i] = 1.0/std::sqrt(buf[i]);
-    return v_float64x2(wasm_v128_load(buf));
+    fallback::v_float64x2 x_(x);
+    return fallback::v_invsqrt(x_);
     // #endif
 }
 
@@ -3165,12 +3135,8 @@ inline v_float32x4 v_abs(const v_float32x4& x)
 // { return v_float64x2(wasm_f64x2_abs(x.val)); }
 inline v_float64x2 v_abs(const v_float64x2& x)
 {
-    double a[2];
-    wasm_v128_store(a, x.val);
-    for (int i=0; i<2; ++i) {
-        a[i] = std::abs(a[i]);
-    }
-    return v_float64x2(wasm_v128_load(a));
+    fallback::v_float64x2 x_(x);
+    return fallback::v_abs(x_);
 }
 
 // TODO: exp, log, sin, cos
@@ -3189,13 +3155,8 @@ OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_float32x4, v_max, wasm_f32x4_max)
 #define OPENCV_HAL_IMPL_WASM_MINMAX_64f_FUNC(func, intrin) \
 inline v_float64x2 func(const v_float64x2& a, const v_float64x2& b) \
 { \
-    double c[2], d[2]; \
-    wasm_v128_store(c, a.val); \
-    wasm_v128_store(d, b.val); \
-    for (int i=0; i<2; ++i) { \
-        c[i] = intrin(c[i], d[i]); \
-    } \
-    return v_float64x2(wasm_v128_load(c)); \
+    fallback::v_float64x2 a_(a), b_(b); \
+    return fallback::func(a_, b_); \
 }
 
 OPENCV_HAL_IMPL_WASM_MINMAX_64f_FUNC(v_min, std::min)
@@ -3356,13 +3317,8 @@ inline _Tpvec v_absdiff(const _Tpvec& a, const _Tpvec& b) \
 } \
 inline _Tpvec v_magnitude(const _Tpvec& a, const _Tpvec& b) \
 { \
-    _Tpvec res = v_fma(a, a, b*b); \
-    _Tp dst[_Tpvec::nlanes]; \
-    wasm_v128_store(dst, res.val); \
-    for (int i=0; i<_Tpvec::nlanes; ++i) { \
-        dst[i] = std::sqrt(dst[i]); \
-    } \
-    return _Tpvec(wasm_v128_load(dst)); \
+    fallback::_Tpvec a_(a), b_(b); \
+    return fallback::v_magnitude(a_, b_); \
 } \
 inline _Tpvec v_sqr_magnitude(const _Tpvec& a, const _Tpvec& b) \
 { \
@@ -3542,19 +3498,13 @@ inline void v_store(_Tp* ptr, const _Tpvec& a, hal::StoreMode mode) \
 } \
 inline void v_store_low(_Tp* ptr, const _Tpvec& a) \
 { \
-    _Tp tmp[_Tpvec::nlanes]; \
-    wasm_v128_store(tmp, a.val); \
-    for (int i=0; i<_Tpvec::nlanes/2; ++i) { \
-        ptr[i] = tmp[i]; \
-    } \
+    fallback::_Tpvec a_(a); \
+    fallback::v_store_low(ptr, a_); \
 } \
 inline void v_store_high(_Tp* ptr, const _Tpvec& a) \
 { \
-    _Tp tmp[_Tpvec::nlanes]; \
-    wasm_v128_store(tmp, a.val); \
-    for (int i=0; i<_Tpvec::nlanes/2; ++i) { \
-        ptr[i] = tmp[i+_Tpvec::nlanes/2]; \
-    } \
+    fallback::_Tpvec a_(a); \
+    fallback::v_store_high(ptr, a_); \
 }
 
 OPENCV_HAL_IMPL_WASM_LOADSTORE_INT_OP(v_uint8x16, uchar)
@@ -3750,12 +3700,8 @@ inline v_uint64x2 v_popcount(const v_int64x2& a)
 #define OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(_Tpvec, suffix, scalarType) \
 inline int v_signmask(const _Tpvec& a) \
 { \
-    scalarType p[_Tpvec::nlanes]; \
-    wasm_v128_store(p, a.val); \
-    int mask = 0; \
-    for( int i = 0; i < _Tpvec::nlanes; ++i) \
-        mask |= int(p[i] < 0) << i; \
-    return mask; \
+    fallback::_Tpvec a_(a); \
+    return fallback::v_signmask(a_); \
 } \
 inline bool v_check_all(const _Tpvec& a) \
 { return wasm_i8x16_all_true(wasm_##suffix##_lt(a.val, wasm_##suffix##_splat(0))); } \
@@ -3882,12 +3828,8 @@ inline v_int32x4 v_trunc(const v_float32x4& a)
 #define OPENCV_HAL_IMPL_MATH_FUNC(func, cfunc, _Tpvec, _Tpnvec, _Tp, _Tpn) \
 inline _Tpnvec func(const _Tpvec& a) \
 { \
-    _Tp src[_Tpvec::nlanes]; \
-    _Tpn dst[_Tpnvec::nlanes] = {0}; \
-    wasm_v128_store(src, a.val); \
-    for( int i = 0; i < _Tpvec::nlanes; i++ ) \
-        dst[i] = cfunc(src[i]); \
-    return _Tpnvec(wasm_v128_load(dst)); \
+    fallback::_Tpvec a_(a); \
+    return fallback::func(a_); \
 }
 
 OPENCV_HAL_IMPL_MATH_FUNC(v_round, cvRound, v_float64x2, v_int32x4, double, int)
@@ -3897,13 +3839,8 @@ OPENCV_HAL_IMPL_MATH_FUNC(v_trunc, int, v_float64x2, v_int32x4, double, int)
 
 inline v_int32x4 v_round(const v_float64x2& a, const v_float64x2& b)
 {
-    double src[4];
-    int dst[4];
-    wasm_v128_store(src, a.val);
-    wasm_v128_store(src+2, b.val);
-    for( int i = 0; i < 4; i++ )
-        dst[i] = cvRound(src[i]);
-    return v_int32x4(wasm_v128_load(dst));
+    fallback::v_float64x2 a_(a), b_(b);
+    return fallback::v_round(a_, b_);
 }
 
 #define OPENCV_HAL_IMPL_WASM_TRANSPOSE4x4(_Tpvec, suffix) \
@@ -4397,17 +4334,14 @@ inline v_float32x4 v_cvt_f32(const v_int32x4& a)
 
 inline v_float32x4 v_cvt_f32(const v_float64x2& a)
 {
-    double buf[2];
-    wasm_v128_store(buf, a.val);
-    return v_float32x4(buf[0], buf[1], 0.f, 0.f);
+    fallback::v_float64x2 a_(a);
+    return fallback::v_cvt_f32(a_);
 }
 
 inline v_float32x4 v_cvt_f32(const v_float64x2& a, const v_float64x2& b)
 {
-    double buf[4];
-    wasm_v128_store(buf, a.val);
-    wasm_v128_store(buf+2, b.val);
-    return v_float32x4(buf[0], buf[1], buf[2], buf[3]);
+    fallback::v_float64x2 a_(a), b_(b);
+    return fallback::v_cvt_f32(a_, b_);
 }
 
 inline v_float64x2 v_cvt_f64(const v_int32x4& a)
@@ -4424,16 +4358,14 @@ inline v_float64x2 v_cvt_f64_high(const v_int32x4& a)
 
 inline v_float64x2 v_cvt_f64(const v_float32x4& a)
 {
-    float buf[4];
-    wasm_v128_store(buf, a.val);
-    return v_float64x2(buf[0], buf[1]);
+    fallback::v_float32x4 a_(a);
+    return fallback::v_cvt_f64(a_);
 }
 
 inline v_float64x2 v_cvt_f64_high(const v_float32x4& a)
 {
-    float buf[4];
-    wasm_v128_store(buf, a.val);
-    return v_float64x2(buf[2], buf[3]);
+    fallback::v_float32x4 a_(a);
+    return fallback::v_cvt_f64_high(a_);
 }
 
 ////////////// Lookup table access ////////////////////

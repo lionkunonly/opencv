@@ -51,7 +51,7 @@
 #include "opencv2/core/saturate.hpp"
 
 #define CV_SIMD128 1
-#define CV_SIMD128_64F 1
+#define CV_SIMD128_64F 0 // Now all implementation of f64 use fallback, so disable it.
 #define CV_SIMD128_FP16 0
 
 namespace cv

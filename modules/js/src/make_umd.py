@@ -90,9 +90,12 @@ def make_umd(opencvjs, cvjs):
   } else if (typeof window === 'object') {
     // Browser globals
     root.cv = factory();
-  } else {
+  } else if (typeof importScripts === 'function') {
     // Web worker
     root.cv = factory;
+  } else {
+    // Other shells, e.g. d8
+    root.cv = factory();
   }
 }(this, function () {
   %s

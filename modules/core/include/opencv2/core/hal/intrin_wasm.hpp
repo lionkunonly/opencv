@@ -51,7 +51,7 @@
 #include "opencv2/core/saturate.hpp"
 
 #define CV_SIMD128 1
-#define CV_SIMD128_64F 1
+#define CV_SIMD128_64F 0 // Now all implementation of f64 use fallback, so disable it.
 #define CV_SIMD128_FP16 0
 
 namespace cv
@@ -216,11 +216,11 @@ struct v_uint64x2
     typedef v128_t vector_type;
     enum { nlanes = 2 };
 
-    #ifdef __wasm_unimplemented_simd128__
+#ifdef __wasm_unimplemented_simd128__
     v_uint64x2() : val(wasm_i64x2_splat(0)) {}
-    #else
-    v_uint64x2() : val((v128_t)(__i64x2){0, 0}) {}
-    #endif
+#else
+    v_uint64x2() : val(wasm_i32x4_splat(0)) {}
+#endif
     explicit v_uint64x2(v128_t v) : val(v) {}
     v_uint64x2(uint64 v0, uint64 v1)
     {
@@ -229,13 +229,13 @@ struct v_uint64x2
     }
     uint64 get0() const
     {
-        // #ifdef __wasm_unimplemented_simd128__
-        // return (uint64)wasm_i64x2_extract_lane(val, 0);
-        // #else
+#ifdef __wasm_unimplemented_simd128__
+        return (uint64)wasm_i64x2_extract_lane(val, 0);
+#else
         uint64 des[2];
         wasm_v128_store(des, val);
         return des[0];
-        // #endif
+#endif
     }
 
     v128_t val;
@@ -247,11 +247,11 @@ struct v_int64x2
     typedef v128_t vector_type;
     enum { nlanes = 2 };
 
-    #ifdef __wasm_unimplemented_simd128__
+#ifdef __wasm_unimplemented_simd128__
     v_int64x2() : val(wasm_i64x2_splat(0)) {}
-    #else
-    v_int64x2() : val((v128_t)(__i64x2){0, 0}) {}
-    #endif
+#else
+    v_int64x2() : val(wasm_i32x4_splat(0)) {}
+#endif
     explicit v_int64x2(v128_t v) : val(v) {}
     v_int64x2(int64 v0, int64 v1)
     {
@@ -260,13 +260,13 @@ struct v_int64x2
     }
     int64 get0() const
     {
-        // #ifdef __wasm_unimplemented_simd128__
-        // return wasm_i64x2_extract_lane(val, 0);
-        // #else
+#ifdef __wasm_unimplemented_simd128__
+        return wasm_i64x2_extract_lane(val, 0);
+#else
         int64 des[2];
         wasm_v128_store(des, val);
         return des[0];
-        // #endif
+#endif
     }
 
     v128_t val;
@@ -278,11 +278,11 @@ struct v_float64x2
     typedef v128_t vector_type;
     enum { nlanes = 2 };
 
-    #ifdef __wasm_unimplemented_simd128__
+#ifdef __wasm_unimplemented_simd128__
     v_float64x2() : val(wasm_f64x2_splat(0)) {}
-    #else
-    v_float64x2() : val((v128_t)(__f64x2){0.0, 0.0}) {}
-    #endif
+#else
+    v_float64x2() : val(wasm_f32x4_splat(0)) {}
+#endif
     explicit v_float64x2(v128_t v) : val(v) {}
     v_float64x2(double v0, double v1)
     {
@@ -291,13 +291,13 @@ struct v_float64x2
     }
     double get0() const
     {
-        // #ifdef __wasm_unimplemented_simd128__
-        // return wasm_f64x2_extract_lane(val, 0);
-        // #else
+#ifdef __wasm_unimplemented_simd128__
+        return wasm_f64x2_extract_lane(val, 0);
+#else
         double des[2];
         wasm_v128_store(des, val);
         return des[0];
-        // #endif
+#endif
     }
 
     v128_t val;
@@ -2763,10 +2763,23 @@ OPENCV_HAL_IMPL_WASM_INITVEC(v_uint16x8, ushort, u16, i16x8, short)
 OPENCV_HAL_IMPL_WASM_INITVEC(v_int16x8, short, s16, i16x8, short)
 OPENCV_HAL_IMPL_WASM_INITVEC(v_uint32x4, unsigned, u32, i32x4, int)
 OPENCV_HAL_IMPL_WASM_INITVEC(v_int32x4, int, s32, i32x4, int)
+OPENCV_HAL_IMPL_WASM_INITVEC(v_float32x4, float, f32, f32x4, float)
+
+#ifdef __wasm_unimplemented_simd128__
 OPENCV_HAL_IMPL_WASM_INITVEC(v_uint64x2, uint64, u64, i64x2, int64)
 OPENCV_HAL_IMPL_WASM_INITVEC(v_int64x2, int64, s64, i64x2, int64)
-OPENCV_HAL_IMPL_WASM_INITVEC(v_float32x4, float, f32, f32x4, float)
 OPENCV_HAL_IMPL_WASM_INITVEC(v_float64x2, double, f64, f64x2, double)
+#else
+#define OPENCV_HAL_IMPL_FALLBACK_INITVEC(_Tpvec, _Tp, suffix, _Tps) \
+inline _Tpvec v_setzero_##suffix() { return _Tpvec((_Tps)0, (_Tps)0); } \
+inline _Tpvec v_setall_##suffix(_Tp v) { return _Tpvec((_Tps)v, (_Tps)v); } \
+template<typename _Tpvec0> inline _Tpvec v_reinterpret_as_##suffix(const _Tpvec0& a) \
+{ return _Tpvec(a.val); }
+
+OPENCV_HAL_IMPL_FALLBACK_INITVEC(v_uint64x2, uint64, u64, int64)
+OPENCV_HAL_IMPL_FALLBACK_INITVEC(v_int64x2, int64, s64, int64)
+OPENCV_HAL_IMPL_FALLBACK_INITVEC(v_float64x2, double, f64, double)
+#endif
 
 //////////////// PACK ///////////////
 inline v_uint8x16 v_pack(const v_uint16x8& a, const v_uint16x8& b)
@@ -2885,18 +2898,28 @@ inline v_int16x8 v_rshr_pack(const v_int32x4& a, const v_int32x4& b)
 template<int n>
 inline v_uint32x4 v_rshr_pack(const v_uint64x2& a, const v_uint64x2& b)
 {
+#ifdef __wasm_unimplemented_simd128__
     v128_t delta = wasm_i64x2_splat(((int64)1 << (n-1)));
     v128_t a1 = wasm_u64x2_shr(wasm_i64x2_add(a.val, delta), n);
     v128_t b1 = wasm_u64x2_shr(wasm_i64x2_add(b.val, delta), n);
     return v_uint32x4(wasm_v8x16_shuffle(a1, b1, 0,1,2,3,8,9,10,11,16,17,18,19,24,25,26,27));
+#else
+    fallback::v_uint64x2 a_(a), b_(b);
+    return fallback::v_rshr_pack<n>(a_, b_);
+#endif
 }
 template<int n>
 inline v_int32x4 v_rshr_pack(const v_int64x2& a, const v_int64x2& b)
 {
+#ifdef __wasm_unimplemented_simd128__
     v128_t delta = wasm_i64x2_splat(((int64)1 << (n-1)));
     v128_t a1 = wasm_i64x2_shr(wasm_i64x2_add(a.val, delta), n);
     v128_t b1 = wasm_i64x2_shr(wasm_i64x2_add(b.val, delta), n);
     return v_int32x4(wasm_v8x16_shuffle(a1, b1, 0,1,2,3,8,9,10,11,16,17,18,19,24,25,26,27));
+#else
+    fallback::v_int64x2 a_(a), b_(b);
+    return fallback::v_rshr_pack<n>(a_, b_);
+#endif
 }
 template<int n>
 inline v_uint8x16 v_rshr_pack_u(const v_int16x8& a, const v_int16x8& b)
@@ -3083,6 +3106,7 @@ inline void v_rshr_pack_store(short* ptr, const v_int32x4& a)
 template<int n>
 inline void v_rshr_pack_store(unsigned* ptr, const v_uint64x2& a)
 {
+#ifdef __wasm_unimplemented_simd128__
     v128_t delta = wasm_i64x2_splat(((int64)1 << (n-1)));
     v128_t a1 = wasm_u64x2_shr(wasm_i64x2_add(a.val, delta), n);
     v128_t r = wasm_v8x16_shuffle(a1, a1, 0,1,2,3,8,9,10,11,0,1,2,3,8,9,10,11);
@@ -3091,10 +3115,15 @@ inline void v_rshr_pack_store(unsigned* ptr, const v_uint64x2& a)
     for (int i=0; i<2; ++i) {
         ptr[i] = t_ptr[i];
     }
+#else
+    fallback::v_uint64x2 _a(a);
+    fallback::v_rshr_pack_store<n>(ptr, _a);
+#endif
 }
 template<int n>
 inline void v_rshr_pack_store(int* ptr, const v_int64x2& a)
 {
+#ifdef __wasm_unimplemented_simd128__
     v128_t delta = wasm_i64x2_splat(((int64)1 << (n-1)));
     v128_t a1 = wasm_i64x2_shr(wasm_i64x2_add(a.val, delta), n);
     v128_t r = wasm_v8x16_shuffle(a1, a1, 0,1,2,3,8,9,10,11,0,1,2,3,8,9,10,11);
@@ -3103,6 +3132,10 @@ inline void v_rshr_pack_store(int* ptr, const v_int64x2& a)
     for (int i=0; i<2; ++i) {
         ptr[i] = t_ptr[i];
     }
+#else
+    fallback::v_int64x2 _a(a);
+    fallback::v_rshr_pack_store<n>(ptr, _a);
+#endif
 }
 template<int n>
 inline void v_rshr_pack_u_store(uchar* ptr, const v_int16x8& a)
@@ -3162,6 +3195,7 @@ inline v_uint8x16 v_pack_b(const v_uint64x2& a, const v_uint64x2& b, const v_uin
                            const v_uint64x2& d, const v_uint64x2& e, const v_uint64x2& f,
                            const v_uint64x2& g, const v_uint64x2& h)
 {
+#ifdef __wasm_unimplemented_simd128__
     v128_t maxval = wasm_i32x4_splat(255);
     v128_t a1 = wasm_v128_bitselect(maxval, a.val, ((__u64x2)(a.val) > (__u64x2)maxval));
     v128_t b1 = wasm_v128_bitselect(maxval, b.val, ((__u64x2)(b.val) > (__u64x2)maxval));
@@ -3178,6 +3212,10 @@ inline v_uint8x16 v_pack_b(const v_uint64x2& a, const v_uint64x2& b, const v_uin
     v128_t abcd = wasm_v8x16_shuffle(ab, cd, 0,1,2,3,16,17,18,19,0,1,2,3,16,17,18,19);
     v128_t efgh = wasm_v8x16_shuffle(ef, gh, 0,1,2,3,16,17,18,19,0,1,2,3,16,17,18,19);
     return v_uint8x16(wasm_v8x16_shuffle(abcd, efgh, 0,1,2,3,4,5,6,7,16,17,18,19,20,21,22,23));
+#else
+    fallback::v_uint64x2 a_(a), b_(b), c_(c), d_(d), e_(e), f_(f), g_(g), h_(h);
+    return fallback::v_pack_b(a_, b_, c_, d_, e_, f_, g_, h_);
+#endif
 }
 
 inline v_float32x4 v_matmul(const v_float32x4& v, const v_float32x4& m0,
@@ -3211,15 +3249,15 @@ inline v_float32x4 v_matmuladd(const v_float32x4& v, const v_float32x4& m0,
 }
 
 #define OPENCV_HAL_IMPL_WASM_BIN_OP(bin_op, _Tpvec, intrin) \
-    inline _Tpvec operator bin_op (const _Tpvec& a, const _Tpvec& b) \
-    { \
-        return _Tpvec(intrin(a.val, b.val)); \
-    } \
-    inline _Tpvec& operator bin_op##= (_Tpvec& a, const _Tpvec& b) \
-    { \
-        a.val = intrin(a.val, b.val); \
-        return a; \
-    }
+inline _Tpvec operator bin_op (const _Tpvec& a, const _Tpvec& b) \
+{ \
+    return _Tpvec(intrin(a.val, b.val)); \
+} \
+inline _Tpvec& operator bin_op##= (_Tpvec& a, const _Tpvec& b) \
+{ \
+    a.val = intrin(a.val, b.val); \
+    return a; \
+}
 
 OPENCV_HAL_IMPL_WASM_BIN_OP(+, v_uint8x16, wasm_u8x16_add_saturate)
 OPENCV_HAL_IMPL_WASM_BIN_OP(-, v_uint8x16, wasm_u8x16_sub_saturate)
@@ -3240,25 +3278,50 @@ OPENCV_HAL_IMPL_WASM_BIN_OP(-, v_float32x4, wasm_f32x4_sub)
 OPENCV_HAL_IMPL_WASM_BIN_OP(*, v_float32x4, wasm_f32x4_mul)
 OPENCV_HAL_IMPL_WASM_BIN_OP(/, v_float32x4, wasm_f32x4_div)
 
-OPENCV_HAL_IMPL_WASM_BIN_OP(+, v_float64x2, wasm_f64x2_add)
-OPENCV_HAL_IMPL_WASM_BIN_OP(-, v_float64x2, wasm_f64x2_sub)
-OPENCV_HAL_IMPL_WASM_BIN_OP(*, v_float64x2, wasm_f64x2_mul)
-OPENCV_HAL_IMPL_WASM_BIN_OP(/, v_float64x2, wasm_f64x2_div)
+#ifdef __wasm_unimplemented_simd128__
 OPENCV_HAL_IMPL_WASM_BIN_OP(+, v_uint64x2, wasm_i64x2_add)
 OPENCV_HAL_IMPL_WASM_BIN_OP(-, v_uint64x2, wasm_i64x2_sub)
 OPENCV_HAL_IMPL_WASM_BIN_OP(+, v_int64x2, wasm_i64x2_add)
 OPENCV_HAL_IMPL_WASM_BIN_OP(-, v_int64x2, wasm_i64x2_sub)
+OPENCV_HAL_IMPL_WASM_BIN_OP(+, v_float64x2, wasm_f64x2_add)
+OPENCV_HAL_IMPL_WASM_BIN_OP(-, v_float64x2, wasm_f64x2_sub)
+OPENCV_HAL_IMPL_WASM_BIN_OP(*, v_float64x2, wasm_f64x2_mul)
+OPENCV_HAL_IMPL_WASM_BIN_OP(/, v_float64x2, wasm_f64x2_div)
+#else
+#define OPENCV_HAL_IMPL_FALLBACK_BIN_OP(bin_op, _Tpvec) \
+inline _Tpvec operator bin_op (const _Tpvec& a, const _Tpvec& b) \
+{ \
+    fallback::_Tpvec a_(a), b_(b); \
+    return _Tpvec((a_) bin_op (b_)); \
+} \
+inline _Tpvec& operator bin_op##= (_Tpvec& a, const _Tpvec& b) \
+{ \
+    fallback::_Tpvec a_(a), b_(b); \
+    a_ bin_op##= b_; \
+    a = _Tpvec(a_); \
+    return a; \
+}
+
+OPENCV_HAL_IMPL_FALLBACK_BIN_OP(+, v_uint64x2)
+OPENCV_HAL_IMPL_FALLBACK_BIN_OP(-, v_uint64x2)
+OPENCV_HAL_IMPL_FALLBACK_BIN_OP(+, v_int64x2)
+OPENCV_HAL_IMPL_FALLBACK_BIN_OP(-, v_int64x2)
+OPENCV_HAL_IMPL_FALLBACK_BIN_OP(+, v_float64x2)
+OPENCV_HAL_IMPL_FALLBACK_BIN_OP(-, v_float64x2)
+OPENCV_HAL_IMPL_FALLBACK_BIN_OP(*, v_float64x2)
+OPENCV_HAL_IMPL_FALLBACK_BIN_OP(/, v_float64x2)
+#endif
 
 // saturating multiply 8-bit, 16-bit
-#define OPENCV_HAL_IMPL_WASM_MUL_SAT(_Tpvec, _Tpwvec)             \
-    inline _Tpvec operator * (const _Tpvec& a, const _Tpvec& b)  \
-    {                                                            \
-        _Tpwvec c, d;                                            \
-        v_mul_expand(a, b, c, d);                                \
-        return v_pack(c, d);                                     \
-    }                                                            \
-    inline _Tpvec& operator *= (_Tpvec& a, const _Tpvec& b)      \
-    { a = a * b; return a; }
+#define OPENCV_HAL_IMPL_WASM_MUL_SAT(_Tpvec, _Tpwvec)        \
+inline _Tpvec operator * (const _Tpvec& a, const _Tpvec& b)  \
+{                                                            \
+    _Tpwvec c, d;                                            \
+    v_mul_expand(a, b, c, d);                                \
+    return v_pack(c, d);                                     \
+}                                                            \
+inline _Tpvec& operator *= (_Tpvec& a, const _Tpvec& b)      \
+{ a = a * b; return a; }
 
 OPENCV_HAL_IMPL_WASM_MUL_SAT(v_uint8x16, v_uint16x8)
 OPENCV_HAL_IMPL_WASM_MUL_SAT(v_int8x16,  v_int16x8)
@@ -3309,11 +3372,19 @@ inline void v_mul_expand(const v_uint16x8& a, const v_uint16x8& b,
 inline void v_mul_expand(const v_uint32x4& a, const v_uint32x4& b,
                          v_uint64x2& c, v_uint64x2& d)
 {
+#ifdef __wasm_unimplemented_simd128__
     v_uint64x2 a0, a1, b0, b1;
     v_expand(a, a0, a1);
     v_expand(b, b0, b1);
     c.val = ((__u64x2)(a0.val) * (__u64x2)(b0.val));
     d.val = ((__u64x2)(a1.val) * (__u64x2)(b1.val));
+#else
+    fallback::v_uint32x4 a_(a), b_(b);
+    fallback::v_uint64x2 c_, d_;
+    fallback::v_mul_expand(a_, b_, c_, d_);
+    c = v_uint64x2(c_);
+    d = v_uint64x2(d_);
+#endif
 }
 
 inline v_int16x8 v_mul_hi(const v_int16x8& a, const v_int16x8& b)
@@ -3358,13 +3429,13 @@ inline v_int32x4 v_dotprod(const v_int16x8& a, const v_int16x8& b, const v_int32
 }
 
 #define OPENCV_HAL_IMPL_WASM_LOGIC_OP(_Tpvec) \
-    OPENCV_HAL_IMPL_WASM_BIN_OP(&, _Tpvec, wasm_v128_and) \
-    OPENCV_HAL_IMPL_WASM_BIN_OP(|, _Tpvec, wasm_v128_or) \
-    OPENCV_HAL_IMPL_WASM_BIN_OP(^, _Tpvec, wasm_v128_xor) \
-    inline _Tpvec operator ~ (const _Tpvec& a) \
-    { \
-        return _Tpvec(wasm_v128_not(a.val)); \
-    }
+OPENCV_HAL_IMPL_WASM_BIN_OP(&, _Tpvec, wasm_v128_and) \
+OPENCV_HAL_IMPL_WASM_BIN_OP(|, _Tpvec, wasm_v128_or) \
+OPENCV_HAL_IMPL_WASM_BIN_OP(^, _Tpvec, wasm_v128_xor) \
+inline _Tpvec operator ~ (const _Tpvec& a) \
+{ \
+    return _Tpvec(wasm_v128_not(a.val)); \
+}
 
 OPENCV_HAL_IMPL_WASM_LOGIC_OP(v_uint8x16)
 OPENCV_HAL_IMPL_WASM_LOGIC_OP(v_int8x16)
@@ -3379,44 +3450,44 @@ OPENCV_HAL_IMPL_WASM_LOGIC_OP(v_float64x2)
 
 inline v_float32x4 v_sqrt(const v_float32x4& x)
 {
-    // #ifdef __wasm_unimplemented_simd128__
-    // return v_float32x4(wasm_f32x4_sqrt(x.val));
-    // #else
+#ifdef __wasm_unimplemented_simd128__
+    return v_float32x4(wasm_f32x4_sqrt(x.val));
+#else
     fallback::v_float32x4 x_(x);
     return fallback::v_sqrt(x_);
-    // #endif
+#endif
 }
 
 inline v_float32x4 v_invsqrt(const v_float32x4& x)
 {
-    // #ifdef __wasm_unimplemented_simd128__
-    // const v128_t _1_0 = wasm_f32x4_splat(1.0);
-    // return v_float32x4(wasm_f32x4_div(_1_0, wasm_f32x4_sqrt(x.val)));
-    // #else
+#ifdef __wasm_unimplemented_simd128__
+    const v128_t _1_0 = wasm_f32x4_splat(1.0);
+    return v_float32x4(wasm_f32x4_div(_1_0, wasm_f32x4_sqrt(x.val)));
+#else
     fallback::v_float32x4 x_(x);
     return fallback::v_invsqrt(x_);
-    // #endif
+#endif
 }
 
 inline v_float64x2 v_sqrt(const v_float64x2& x)
 {
-    // #ifdef __wasm_unimplemented_simd128__
-    // return v_float64x2(wasm_f64x2_sqrt(x.val));
-    // #else
+#ifdef __wasm_unimplemented_simd128__
+    return v_float64x2(wasm_f64x2_sqrt(x.val));
+#else
     fallback::v_float64x2 x_(x);
     return fallback::v_sqrt(x_);
-    // #endif
+#endif
 }
 
 inline v_float64x2 v_invsqrt(const v_float64x2& x)
 {
-    // #ifdef __wasm_unimplemented_simd128__
-    // const v128_t _1_0 = wasm_f64x2_splat(1.0);
-    // return v_float64x2(wasm_f64x2_div(_1_0, wasm_f64x2_sqrt(x.val)));
-    // #else
+#ifdef __wasm_unimplemented_simd128__
+    const v128_t _1_0 = wasm_f64x2_splat(1.0);
+    return v_float64x2(wasm_f64x2_div(_1_0, wasm_f64x2_sqrt(x.val)));
+#else
     fallback::v_float64x2 x_(x);
     return fallback::v_invsqrt(x_);
-    // #endif
+#endif
 }
 
 #define OPENCV_HAL_IMPL_WASM_ABS_INT_FUNC(_Tpuvec, _Tpsvec, suffix, zsuffix, shiftWidth) \
@@ -3433,12 +3504,14 @@ OPENCV_HAL_IMPL_WASM_ABS_INT_FUNC(v_uint32x4, v_int32x4, u32x4, i32x4, 31)
 
 inline v_float32x4 v_abs(const v_float32x4& x)
 { return v_float32x4(wasm_f32x4_abs(x.val)); }
-// inline v_float64x2 v_abs(const v_float64x2& x)
-// { return v_float64x2(wasm_f64x2_abs(x.val)); }
 inline v_float64x2 v_abs(const v_float64x2& x)
 {
+#ifdef __wasm_unimplemented_simd128__
+    return v_float64x2(wasm_f64x2_abs(x.val));
+#else
     fallback::v_float64x2 x_(x);
     return fallback::v_abs(x_);
+#endif
 }
 
 // TODO: exp, log, sin, cos
@@ -3451,9 +3524,11 @@ inline _Tpvec func(const _Tpvec& a, const _Tpvec& b) \
 
 OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_float32x4, v_min, wasm_f32x4_min)
 OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_float32x4, v_max, wasm_f32x4_max)
-// OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_float64x2, v_min, wasm_f64x2_min)
-// OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_float64x2, v_max, wasm_f64x2_max)
 
+#ifdef __wasm_unimplemented_simd128__
+OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_float64x2, v_min, wasm_f64x2_min)
+OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_float64x2, v_max, wasm_f64x2_max)
+#else
 #define OPENCV_HAL_IMPL_WASM_MINMAX_64f_FUNC(func, intrin) \
 inline v_float64x2 func(const v_float64x2& a, const v_float64x2& b) \
 { \
@@ -3463,6 +3538,7 @@ inline v_float64x2 func(const v_float64x2& a, const v_float64x2& b) \
 
 OPENCV_HAL_IMPL_WASM_MINMAX_64f_FUNC(v_min, std::min)
 OPENCV_HAL_IMPL_WASM_MINMAX_64f_FUNC(v_max, std::max)
+#endif
 
 #define OPENCV_HAL_IMPL_WASM_MINMAX_S_INIT_FUNC(_Tpvec, suffix) \
 inline _Tpvec v_min(const _Tpvec& a, const _Tpvec& b) \
@@ -3517,7 +3593,24 @@ OPENCV_HAL_IMPL_WASM_INIT_CMP_OP(v_int16x8, i16x8, i16x8)
 OPENCV_HAL_IMPL_WASM_INIT_CMP_OP(v_uint32x4, u32x4, i32x4)
 OPENCV_HAL_IMPL_WASM_INIT_CMP_OP(v_int32x4, i32x4, i32x4)
 OPENCV_HAL_IMPL_WASM_INIT_CMP_OP(v_float32x4, f32x4, f32x4)
+
+#ifdef __wasm_unimplemented_simd128__
 OPENCV_HAL_IMPL_WASM_INIT_CMP_OP(v_float64x2, f64x2, f64x2)
+#else
+#define OPENCV_HAL_IMPL_INIT_FALLBACK_CMP_OP(_Tpvec, bin_op) \
+inline _Tpvec operator bin_op (const _Tpvec& a, const _Tpvec& b) \
+{ \
+    fallback::_Tpvec a_(a), b_(b); \
+    return _Tpvec((a_) bin_op (b_));\
+} \
+
+OPENCV_HAL_IMPL_INIT_FALLBACK_CMP_OP(v_float64x2, ==)
+OPENCV_HAL_IMPL_INIT_FALLBACK_CMP_OP(v_float64x2, !=)
+OPENCV_HAL_IMPL_INIT_FALLBACK_CMP_OP(v_float64x2, <)
+OPENCV_HAL_IMPL_INIT_FALLBACK_CMP_OP(v_float64x2, >)
+OPENCV_HAL_IMPL_INIT_FALLBACK_CMP_OP(v_float64x2, <=)
+OPENCV_HAL_IMPL_INIT_FALLBACK_CMP_OP(v_float64x2, >=)
+#endif
 
 #define OPENCV_HAL_IMPL_WASM_64BIT_CMP_OP(_Tpvec, cast) \
 inline _Tpvec operator == (const _Tpvec& a, const _Tpvec& b) \
@@ -3534,12 +3627,17 @@ inline v_float32x4 v_not_nan(const v_float32x4& a)
     v128_t t = wasm_i32x4_splat(0x7f800000);
     return v_float32x4(wasm_u32x4_lt(wasm_v128_and(a.val, z), t));
 }
-// inline v_float64x2 v_not_nan(const v_float64x2& a)
-// {
-//     v128_t z = wasm_i64x2_splat(0x7fffffffffffffff);
-//     v128_t t = wasm_i64x2_splat(0x7ff0000000000000);
-//     return v_float64x2(wasm_u64x2_lt(wasm_v128_and(a.val, z), t));
-// }
+inline v_float64x2 v_not_nan(const v_float64x2& a)
+{
+#ifdef __wasm_unimplemented_simd128__
+    v128_t z = wasm_i64x2_splat(0x7fffffffffffffff);
+    v128_t t = wasm_i64x2_splat(0x7ff0000000000000);
+    return v_float64x2((__u64x2)(wasm_v128_and(a.val, z)) < (__u64x2)t);
+#else
+    fallback::v_float64x2 a_(a);
+    return fallback::v_not_nan(a_);
+#endif
+}
 
 OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_uint8x16, v_add_wrap, wasm_i8x16_add)
 OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_int8x16, v_add_wrap, wasm_i8x16_add)
@@ -3612,11 +3710,23 @@ inline v_float64x2 v_fma(const v_float64x2& a, const v_float64x2& b, const v_flo
     return a * b + c;
 }
 
-#define OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(_Tpvec, _Tp, _Tpreg, suffix, absmask_vec) \
-inline _Tpvec v_absdiff(const _Tpvec& a, const _Tpvec& b) \
-{ \
-    return _Tpvec(wasm_v128_and(wasm_##suffix##_sub(a.val, b.val), absmask_vec)); \
-} \
+inline v_float32x4 v_absdiff(const v_float32x4& a, const v_float32x4& b)
+{
+    v128_t absmask_vec = wasm_i32x4_splat(0x7fffffff);
+    return v_float32x4(wasm_v128_and(wasm_f32x4_sub(a.val, b.val), absmask_vec));
+}
+inline v_float64x2 v_absdiff(const v_float64x2& a, const v_float64x2& b)
+{
+#ifdef __wasm_unimplemented_simd128__
+    v128_t absmask_vec = wasm_u64x2_shr(wasm_i32x4_splat(-1), 1);
+    return v_float64x2(wasm_v128_and(wasm_f64x2_sub(a.val, b.val), absmask_vec));
+#else
+    fallback::v_float64x2 a_(a), b_(b);
+    return fallback::v_absdiff(a_, b_);
+#endif
+}
+
+#define OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(_Tpvec) \
 inline _Tpvec v_magnitude(const _Tpvec& a, const _Tpvec& b) \
 { \
     fallback::_Tpvec a_(a), b_(b); \
@@ -3631,8 +3741,8 @@ inline _Tpvec v_muladd(const _Tpvec& a, const _Tpvec& b, const _Tpvec& c) \
     return v_fma(a, b, c); \
 }
 
-OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(v_float32x4, float, v128_t, f32x4, wasm_i32x4_splat(0x7fffffff))
-OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(v_float64x2, double, v128_t, f64x2, wasm_u64x2_shr(wasm_i32x4_splat(-1), 1))
+OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(v_float32x4)
+OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(v_float64x2)
 
 #define OPENCV_HAL_IMPL_WASM_SHIFT_OP(_Tpuvec, _Tpsvec, suffix, ssuffix) \
 inline _Tpuvec operator << (const _Tpuvec& a, int imm) \
@@ -3675,7 +3785,37 @@ inline _Tpsvec v_shr(const _Tpsvec& a) \
 OPENCV_HAL_IMPL_WASM_SHIFT_OP(v_uint8x16, v_int8x16, i8x16, u8x16)
 OPENCV_HAL_IMPL_WASM_SHIFT_OP(v_uint16x8, v_int16x8, i16x8, u16x8)
 OPENCV_HAL_IMPL_WASM_SHIFT_OP(v_uint32x4, v_int32x4, i32x4, u32x4)
+
+#ifdef __wasm_unimplemented_simd128__
 OPENCV_HAL_IMPL_WASM_SHIFT_OP(v_uint64x2, v_int64x2, i64x2, u64x2)
+#else
+#define OPENCV_HAL_IMPL_FALLBACK_SHIFT_OP(_Tpvec) \
+inline _Tpvec operator << (const _Tpvec& a, int imm) \
+{ \
+    fallback::_Tpvec a_(a); \
+    return a_ << imm; \
+} \
+inline _Tpvec operator >> (const _Tpvec& a, int imm) \
+{ \
+    fallback::_Tpvec a_(a); \
+    return a_ >> imm; \
+} \
+template<int imm> \
+inline _Tpvec v_shl(const _Tpvec& a) \
+{ \
+    fallback::_Tpvec a_(a); \
+    return fallback::v_shl<imm>(a_); \
+} \
+template<int imm> \
+inline _Tpvec v_shr(const _Tpvec& a) \
+{ \
+    fallback::_Tpvec a_(a); \
+    return fallback::v_shr<imm>(a_); \
+} \
+
+OPENCV_HAL_IMPL_FALLBACK_SHIFT_OP(v_uint64x2)
+OPENCV_HAL_IMPL_FALLBACK_SHIFT_OP(v_int64x2)
+#endif
 
 namespace hal_wasm_internal
 {
@@ -4024,9 +4164,23 @@ inline int v_signmask(const v_float64x2& a)
     return fallback::v_signmask(a_);
 }
 inline bool v_check_all(const v_float64x2& a)
-{ return wasm_i8x16_all_true((__i64x2)(a.val) < (__i64x2)(wasm_i64x2_splat(0))); }
+{
+#ifdef __wasm_unimplemented_simd128__
+    return wasm_i8x16_all_true((__i64x2)(a.val) < (__i64x2)(wasm_i64x2_splat(0)));
+#else
+    fallback::v_float64x2 a_(a);
+    return fallback::v_check_all(a_);
+#endif
+}
 inline bool v_check_any(const v_float64x2& a)
-{ return wasm_i8x16_any_true((__i64x2)(a.val) < (__i64x2)(wasm_i64x2_splat(0)));; }
+{
+#ifdef __wasm_unimplemented_simd128__
+    return wasm_i8x16_any_true((__i64x2)(a.val) < (__i64x2)(wasm_i64x2_splat(0)));;
+#else
+    fallback::v_float64x2 a_(a);
+    return fallback::v_check_any(a_);
+#endif
+}
 
 #define OPENCV_HAL_IMPL_WASM_SELECT(_Tpvec) \
 inline _Tpvec v_select(const _Tpvec& mask, const _Tpvec& a, const _Tpvec& b) \
@@ -4046,20 +4200,20 @@ OPENCV_HAL_IMPL_WASM_SELECT(v_float32x4)
 OPENCV_HAL_IMPL_WASM_SELECT(v_float64x2)
 
 #define OPENCV_HAL_IMPL_WASM_EXPAND(_Tpvec, _Tpwvec, _Tp, intrin)    \
-    inline void v_expand(const _Tpvec& a, _Tpwvec& b0, _Tpwvec& b1) \
-    {                                                               \
-        b0.val = intrin(a.val);                                     \
-        b1.val = __CV_CAT(intrin, _high)(a.val);                    \
-    }                                                               \
-    inline _Tpwvec v_expand_low(const _Tpvec& a)                    \
-    { return _Tpwvec(intrin(a.val)); }                              \
-    inline _Tpwvec v_expand_high(const _Tpvec& a)                   \
-    { return _Tpwvec(__CV_CAT(intrin, _high)(a.val)); }             \
-    inline _Tpwvec v_load_expand(const _Tp* ptr)                    \
-    {                                                               \
-        v128_t a = wasm_v128_load(ptr);                             \
-        return _Tpwvec(intrin(a));                                  \
-    }
+inline void v_expand(const _Tpvec& a, _Tpwvec& b0, _Tpwvec& b1)      \
+{                                                                    \
+    b0.val = intrin(a.val);                                          \
+    b1.val = __CV_CAT(intrin, _high)(a.val);                         \
+}                                                                    \
+inline _Tpwvec v_expand_low(const _Tpvec& a)                         \
+{ return _Tpwvec(intrin(a.val)); }                                   \
+inline _Tpwvec v_expand_high(const _Tpvec& a)                        \
+{ return _Tpwvec(__CV_CAT(intrin, _high)(a.val)); }                  \
+inline _Tpwvec v_load_expand(const _Tp* ptr)                         \
+{                                                                    \
+    v128_t a = wasm_v128_load(ptr);                                  \
+    return _Tpwvec(intrin(a));                                       \
+}
 
 OPENCV_HAL_IMPL_WASM_EXPAND(v_uint8x16, v_uint16x8, uchar, v128_cvtu8x16_i16x8)
 OPENCV_HAL_IMPL_WASM_EXPAND(v_int8x16,  v_int16x8,  schar, v128_cvti8x16_i16x8)
@@ -4069,11 +4223,11 @@ OPENCV_HAL_IMPL_WASM_EXPAND(v_uint32x4, v_uint64x2, unsigned, v128_cvtu32x4_i64x
 OPENCV_HAL_IMPL_WASM_EXPAND(v_int32x4,  v_int64x2,  int, v128_cvti32x4_i64x2)
 
 #define OPENCV_HAL_IMPL_WASM_EXPAND_Q(_Tpvec, _Tp, intrin)  \
-    inline _Tpvec v_load_expand_q(const _Tp* ptr)          \
-    {                                                      \
-        v128_t a = wasm_v128_load(ptr);                    \
-        return _Tpvec(intrin(a));                          \
-    }
+inline _Tpvec v_load_expand_q(const _Tp* ptr)               \
+{                                                           \
+    v128_t a = wasm_v128_load(ptr);                         \
+    return _Tpvec(intrin(a));                               \
+}
 
 OPENCV_HAL_IMPL_WASM_EXPAND_Q(v_uint32x4, uchar, v128_cvtu8x16_i32x4)
 OPENCV_HAL_IMPL_WASM_EXPAND_Q(v_int32x4, schar, v128_cvti8x16_i32x4)
@@ -4657,14 +4811,24 @@ inline v_float32x4 v_cvt_f32(const v_float64x2& a, const v_float64x2& b)
 
 inline v_float64x2 v_cvt_f64(const v_int32x4& a)
 {
+#ifdef __wasm_unimplemented_simd128__
     v128_t p = v128_cvti32x4_i64x2(a.val);
     return v_float64x2(wasm_convert_f64x2_i64x2(p));
+#else
+    fallback::v_int32x4 a_(a);
+    return fallback::v_cvt_f64(a_);
+#endif
 }
 
 inline v_float64x2 v_cvt_f64_high(const v_int32x4& a)
 {
+#ifdef __wasm_unimplemented_simd128__
     v128_t p = v128_cvti32x4_i64x2_high(a.val);
     return v_float64x2(wasm_convert_f64x2_i64x2(p));
+#else
+    fallback::v_int32x4 a_(a);
+    return fallback::v_cvt_f64_high(a_);
+#endif
 }
 
 inline v_float64x2 v_cvt_f64(const v_float32x4& a)

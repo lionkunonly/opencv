@@ -3195,6 +3195,7 @@ inline v_uint8x16 v_pack_b(const v_uint64x2& a, const v_uint64x2& b, const v_uin
                            const v_uint64x2& d, const v_uint64x2& e, const v_uint64x2& f,
                            const v_uint64x2& g, const v_uint64x2& h)
 {
+    #ifdef __wasm_unimplemented_simd128__
     v128_t maxval = wasm_i32x4_splat(255);
     v128_t a1 = wasm_v128_bitselect(maxval, a.val, ((__u64x2)(a.val) > (__u64x2)maxval));
     v128_t b1 = wasm_v128_bitselect(maxval, b.val, ((__u64x2)(b.val) > (__u64x2)maxval));
@@ -3211,6 +3212,10 @@ inline v_uint8x16 v_pack_b(const v_uint64x2& a, const v_uint64x2& b, const v_uin
     v128_t abcd = wasm_v8x16_shuffle(ab, cd, 0,1,2,3,16,17,18,19,0,1,2,3,16,17,18,19);
     v128_t efgh = wasm_v8x16_shuffle(ef, gh, 0,1,2,3,16,17,18,19,0,1,2,3,16,17,18,19);
     return v_uint8x16(wasm_v8x16_shuffle(abcd, efgh, 0,1,2,3,4,5,6,7,16,17,18,19,20,21,22,23));
+    #else
+    fallback::v_uint64x2 a_(a), b_(b), c_(c), d_(d), e_(e), f_(f), g_(g), h_(h);
+    return fallback::v_pack_b(a_, b_, c_, d_, e_, f_, g_, h_);
+    #endif
 }
 
 inline v_float32x4 v_matmul(const v_float32x4& v, const v_float32x4& m0,
@@ -3366,11 +3371,19 @@ inline void v_mul_expand(const v_uint16x8& a, const v_uint16x8& b,
 inline void v_mul_expand(const v_uint32x4& a, const v_uint32x4& b,
                          v_uint64x2& c, v_uint64x2& d)
 {
+    #ifdef __wasm_unimplemented_simd128__
     v_uint64x2 a0, a1, b0, b1;
     v_expand(a, a0, a1);
     v_expand(b, b0, b1);
     c.val = ((__u64x2)(a0.val) * (__u64x2)(b0.val));
     d.val = ((__u64x2)(a1.val) * (__u64x2)(b1.val));
+    #else
+    fallback::v_uint32x4 a_(a), b_(b);
+    fallback::v_uint64x2 c_, d_;
+    fallback::v_mul_expand(a_, b_, c_, d_);
+    c = v_uint64x2(c_);
+    d = v_uint64x2(d_);
+    #endif
 }
 
 inline v_int16x8 v_mul_hi(const v_int16x8& a, const v_int16x8& b)

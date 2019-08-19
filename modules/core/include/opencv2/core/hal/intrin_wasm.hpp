@@ -3337,20 +3337,24 @@ inline v_uint16x8 v_mul_hi(const v_uint16x8& a, const v_uint16x8& b)
 
 inline v_int32x4 v_dotprod(const v_int16x8& a, const v_int16x8& b)
 {
-    v128_t c = wasm_i16x8_mul(a.val, b.val);
-    v128_t d = wasm_i16x8_splat(0);
-    v128_t e = wasm_v8x16_shuffle(c, d, 0,1,16,17,4,5,20,21,8,9,24,25,12,13,28,29);
-    v128_t f = wasm_v8x16_shuffle(c, d, 2,3,16,17,6,7,20,21,10,11,24,25,14,15,28,29);
-    return v_int32x4(wasm_i32x4_add(e, f));
+    v128_t a0 = wasm_i32x4_shr(wasm_i32x4_shl(a.val, 16), 16);
+    v128_t a1 = wasm_i32x4_shr(a.val, 16);
+    v128_t b0 = wasm_i32x4_shr(wasm_i32x4_shl(b.val, 16), 16);
+    v128_t b1 = wasm_i32x4_shr(b.val, 16);
+    v128_t c = wasm_i32x4_mul(a0, b0);
+    v128_t d = wasm_i32x4_mul(a1, b1);
+    return v_int32x4(wasm_i32x4_add(c, d));
 }
 
 inline v_int32x4 v_dotprod(const v_int16x8& a, const v_int16x8& b, const v_int32x4& c)
 {
-    v128_t d = wasm_i16x8_mul(a.val, b.val);
-    v128_t e = wasm_i16x8_splat(0);
-    v128_t f = wasm_v8x16_shuffle(d, e, 0,1,16,17,4,5,20,21,8,9,24,25,12,13,28,29);
-    v128_t g = wasm_v8x16_shuffle(d, e, 2,3,16,17,6,7,20,21,10,11,24,25,14,15,28,29);
-    return v_int32x4(wasm_i32x4_add(wasm_i32x4_add(f, g), c.val));
+    v128_t a0 = wasm_i32x4_shr(wasm_i32x4_shl(a.val, 16), 16);
+    v128_t a1 = wasm_i32x4_shr(a.val, 16);
+    v128_t b0 = wasm_i32x4_shr(wasm_i32x4_shl(b.val, 16), 16);
+    v128_t b1 = wasm_i32x4_shr(b.val, 16);
+    v128_t d = wasm_i32x4_mul(a0, b0);
+    v128_t e = wasm_i32x4_mul(a1, b1);
+    return v_int32x4(wasm_i32x4_add(wasm_i32x4_add(d, e), c.val));
 }
 
 #define OPENCV_HAL_IMPL_WASM_LOGIC_OP(_Tpvec) \

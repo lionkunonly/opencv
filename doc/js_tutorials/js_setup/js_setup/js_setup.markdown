@@ -114,10 +114,30 @@ Building OpenCV.js from Source
     The default threads number is the logic core number of your device. You can use `cv.parallel_pthreads_set_threads_num(number)` to set threads number by yourself and use `cv.parallel_pthreads_get_threads_num()` to get the current threads number.
 
     @note
-    You should build wasm version of `opencv.js` if you want to enable this optimization. 
+    You should build wasm version of `opencv.js` if you want to enable this optimization. And the threads optimization only works in browser, not in node.js. You should enable the `WebAssembly threads support` feature first with your browser.
 
--#  [optional] To build `opencv.js` with wasm simd optimization, append `--simd` option.
-    To build wasm intrinsics tests, append `--build_wasm_intrin_test` option.
+-#  [optional] To build `opencv.js` with wasm simd optimization, append `--simd` option. 
+
+    For example:
+    @code{.bash}
+    python ./platforms/js/build_js.py build_js --build_wasm --simd
+    @endcode
+
+    The simd optimization is experimental as wasm simd is still in development.
+
+    @note
+    Now only emscripten LLVM upstream backend supports wasm simd, refering to https://emscripten.org/docs/porting/simd.html. So you need to setup upstream backend environment with the following command first: 
+    @code{.bash}
+    ./emsdk update
+    ./emsdk install latest-upstream
+    ./emsdk activate latest-upstream
+    source ./emsdk_env.sh
+    @endcode
+
+    @note
+    You should build wasm version of `opencv.js` if you want to enable this optimization. And you should enable the `WebAssembly SIMD support` feature first.
+
+-#  [optional] To build wasm intrinsics tests, append `--build_wasm_intrin_test` option.
 
     For example:
     @code{.bash}
@@ -129,7 +149,7 @@ Building OpenCV.js from Source
     cv.test_hal_intrin_all()
     @endcode
 
-    And the failed cases will be print on the console. 
+    And the failed cases will be logged in the JavaScript debug console.
     
     If you only want to test single data type of wasm intrinsics, you can use the following functions: 
     @code{.js}
@@ -144,18 +164,6 @@ Building OpenCV.js from Source
     cv.test_hal_intrin_float32()
     cv.test_hal_intrin_float64()
     @endcode
-
-    @note
-    Now only emscripten LLVM upstream backend support wasm simd, so you need to setup upstream backend environment with the following command first: 
-    @code{.bash}
-    ./emsdk update
-    ./emsdk install latest-upstream
-    ./emsdk activate latest-upstream
-    source ./emsdk_env.sh
-    @endcode
-
-    @note
-    You should build wasm version of `opencv.js` if you want to enable this optimization.
 
 -#  [optional] To build performance tests, append `--build_perf` option.
 
@@ -174,5 +182,5 @@ Building OpenCV.js from Source
     @code{.sh}
     cd bin/perf
     npm install
-    node threshold.js --test_param_filter="(1920x1080, CV_8UC1, THRESH_BINARY))"
+    node perf_threshold.js --test_param_filter="(1920x1080, CV_8UC1, THRESH_BINARY)"
     @endcode

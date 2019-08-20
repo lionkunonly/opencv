@@ -116,8 +116,8 @@ cv.onRuntimeInitialized = () => {
       matType = 'CV_8UC1';
       threshType = 'THRESH_BINARY|THRESH_OTSU';
     } else {
-      matType = (params.match(/CV\_[0-9]+[A-z][A-z][0-9]/)||[]).toString();
-      threshType = (params.match(/THRESH\_[A-z]+\_?[A-z]*/)||[]).toString();
+      matType = (params.match(/CV\_[0-9]+[A-z][A-z][0-9]/) || []).toString();
+      threshType = (params.match(/THRESH\_[A-z]+\_?[A-z]*/) || []).toString();
     }
     // check if the params match and add case
     for (let i = 0; i < combinations.length; ++i) {

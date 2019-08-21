@@ -114,9 +114,9 @@ Building OpenCV.js from Source
     The default threads number is the logic core number of your device. You can use `cv.parallel_pthreads_set_threads_num(number)` to set threads number by yourself and use `cv.parallel_pthreads_get_threads_num()` to get the current threads number.
 
     @note
-    You should build wasm version of `opencv.js` if you want to enable this optimization. And the threads optimization only works in browser, not in node.js. You should enable the `WebAssembly threads support` feature first with your browser.
+    You should build wasm version of `opencv.js` if you want to enable this optimization. And the threads optimization only works in browser, not in node.js. You need to enable the `WebAssembly threads support` feature first with your browser. For example, if you use chrome, please enable this flag in chrome://flags.
 
--#  [optional] To build `opencv.js` with wasm simd optimization, append `--simd` option. 
+-#  [optional] To build `opencv.js` with wasm simd optimization, append `--simd` option.
 
     For example:
     @code{.bash}
@@ -135,7 +135,7 @@ Building OpenCV.js from Source
     @endcode
 
     @note
-    You should build wasm version of `opencv.js` if you want to enable this optimization. And you should enable the `WebAssembly SIMD support` feature first.
+    You should build wasm version of `opencv.js` if you want to enable this optimization. For browser, you need to enable the `WebAssembly SIMD support` feature first. For example, if you use chrome, please enable this flag in chrome://flags. For Node.js, you need to run script with flag `--experimental-wasm-simd`.
 
 -#  [optional] To build wasm intrinsics tests, append `--build_wasm_intrin_test` option.
 

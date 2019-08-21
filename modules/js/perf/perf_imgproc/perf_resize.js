@@ -165,11 +165,11 @@ cv.onRuntimeInitialized = () => {
   }
 
   function decodeParams2Case(suite, params) {
-    let sizeString = params.match(/[0-9]+x[0-9]+/g).slice(0, 2).toString();
-    let sizes = sizeString.match(/[0-9]+/g);
+    let sizeString = (params.match(/[0-9]+x[0-9]+/g) || []).slice(0, 2).toString();
+    let sizes = (sizeString.match(/[0-9]+/g) || []);
     let size1Str = sizes.slice(0, 2).toString();
     let size2Str = sizes.slice(2, 5).toString();
-    let matType = params.match(/CV\_[0-9]+[A-z][A-z][0-9]/).toString();
+    let matType = (params.match(/CV\_[0-9]+[A-z][A-z][0-9]/) || []).toString();
     let size1 = cvtStr2cvSize(size1Str);
     let size2 = cvtStr2cvSize(size2Str);
     // check if the params match and add case
@@ -252,9 +252,11 @@ cv.onRuntimeInitialized = () => {
     runButton.onclick = function()　{
       let paramsContent = paramsElement.value;
       genBenchmarkCase(paramsContent);
-      runButton.setAttribute("disabled", "disabled");
-      runButton.setAttribute('class', 'btn btn-primary disabled');
-      runButton.innerHTML = "Running";
+      if (totalCaseNum !== 0) {
+        runButton.setAttribute("disabled", "disabled");
+        runButton.setAttribute('class', 'btn btn-primary disabled');
+        runButton.innerHTML = "Running";
+      }
     }
   }
 };

@@ -476,8 +476,8 @@ cv.onRuntimeInitialized = () => {
   }
 
   function decodeParams2Case(suite, params) {
-    let sizeStr = params.match(/[0-9]+/g).slice(0, 2).toString();
-    let mode = (params.match(/CX\_[A-z]+2[A-z]+/) || params.match(/COLOR\_[A-z]+2[A-z]+/)).toString();
+    let sizeStr = (params.match(/[0-9]+/g) || []).slice(0, 2).toString();
+    let mode = (params.match(/CX\_[A-z]+2[A-z]+/) || params.match(/COLOR\_[A-z]+2[A-z]+/) || []).toString();
     let size = cvtStr2cvSize(sizeStr);
 
     // check if the params match and add case
@@ -561,9 +561,11 @@ cv.onRuntimeInitialized = () => {
     runButton.onclick = function()　{
       let paramsContent = paramsElement.value;
       genBenchmarkCase(paramsContent);
-      runButton.setAttribute("disabled", "disabled");
-      runButton.setAttribute('class', 'btn btn-primary disabled');
-      runButton.innerHTML = "Running";
+      if (totalCaseNum !== 0) {
+        runButton.setAttribute("disabled", "disabled");
+        runButton.setAttribute('class', 'btn btn-primary disabled');
+        runButton.innerHTML = "Running";
+      }
     }
   }
 };

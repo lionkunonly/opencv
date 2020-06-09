@@ -11,17 +11,19 @@ if (isNodeJs) {
   var logElement = document.getElementById('log');
 }
 
-cv.onRuntimeInitialized = () => {
+function perf() {
+  
   console.log('opencv.js loaded');
   if (isNodeJs) {
     global.cv = cv;
     global.combine = HelpFunc.combine;
     global.cvtStr2cvSize = HelpFunc.cvtStr2cvSize;
-    global.cvSize = Base.cvSize;
+    global.cvSize = Base.createCvSize();
   } else {
     runButton.removeAttribute('disabled');
     runButton.setAttribute('class', 'btn btn-primary');
     runButton.innerHTML = 'Run';
+    cvSize = createCvSize();
   }
   let totalCaseNum, currentCaseId;
 
@@ -570,3 +572,14 @@ cv.onRuntimeInitialized = () => {
     }
   }
 };
+
+async function main() {
+  if (cv instanceof Promise) {
+    cv = await cv;
+    perf();
+  } else {
+    cv.onRuntimeInitialized = perf;
+  }
+}
+
+main();

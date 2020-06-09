@@ -4,7 +4,7 @@ if　(isNodeJs)　{
   var Benchmark = require('benchmark');
   var cv = require('../../opencv');
   var HelpFunc = require('../perf_helpfunc');
-  var Base = require('../base')
+  var Base = require('../base');
 } else {
   var paramsElement = document.getElementById('params');
   var runButton = document.getElementById('runButton');

@@ -2,21 +2,25 @@ if (typeof window === 'undefined') {
   var cv = require("../opencv");
 }
 
-function createCvSize() {
-  var cvSize = {
-    szODD: new cv.Size(127, 61),
-    szQVGA: new cv.Size(320, 240),
-    szVGA: new cv.Size(640, 480),
-    szqHD: new cv.Size(960, 540),
-    sz720p: new cv.Size(1280, 720),
-    sz1080p: new cv.Size(1920, 1080),
-    sz130x60: new cv.Size(130, 60),
-    sz213x120: new cv.Size(120 * 1280 / 720, 120),
+let gCvSize;
+
+function getCvSize() {
+  if (gCvSize === undefined) {
+    gCvSize = {
+      szODD: new cv.Size(127, 61),
+      szQVGA: new cv.Size(320, 240),
+      szVGA: new cv.Size(640, 480),
+      szqHD: new cv.Size(960, 540),
+      sz720p: new cv.Size(1280, 720),
+      sz1080p: new cv.Size(1920, 1080),
+      sz130x60: new cv.Size(130, 60),
+      sz213x120: new cv.Size(120 * 1280 / 720, 120),
+    };
   }
 
-  return cvSize
+  return gCvSize;
 }
 
 if (typeof window === 'undefined') {
-  exports.createCvSize = createCvSize;
+  exports.getCvSize = getCvSize;
 }

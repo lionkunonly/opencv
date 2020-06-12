@@ -19,7 +19,7 @@ var fillGradient = function(cv, img, delta=5) {
 var cvtStr2cvSize = function(strSize) {
   let size;
 
-  cvSize = createCvSize()
+  let cvSize = getCvSize();
   switch(strSize) {
     case "127,61": size = cvSize.szODD;break;
     case '320,240': size = cvSize.szQVGA;break;

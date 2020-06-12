@@ -18,12 +18,12 @@ function perf() {
     global.cv = cv;
     global.combine = HelpFunc.combine;
     global.cvtStr2cvSize = HelpFunc.cvtStr2cvSize;
-    global.cvSize = Base.createCvSize();
+    global.cvSize = Base.getCvSize();
   } else {
     runButton.removeAttribute('disabled');
     runButton.setAttribute('class', 'btn btn-primary');
     runButton.innerHTML = 'Run';
-    cvSize = createCvSize();
+    cvSize = getCvSize();
   }
   let totalCaseNum, currentCaseId;
 

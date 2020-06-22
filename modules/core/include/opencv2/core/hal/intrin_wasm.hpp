@@ -2412,32 +2412,32 @@ inline v_int32x4 v_dotprod_expand(const v_int8x16& a, const v_int8x16& b, const 
 // 16 >> 64
 inline v_uint64x2 v_dotprod_expand(const v_uint16x8& a, const v_uint16x8& b)
 {
-    fallback::v_uint16x8 a_(a);
-    fallback::v_uint16x8 b_(b);
-    return fallback::v_dotprod_expand(a_, b_);
+    v128_t a0 = wasm_u32x4_shr(wasm_i32x4_shl(a.val, 16), 16);
+    v128_t a1 = wasm_u32x4_shr(a.val, 16);
+    v128_t b0 = wasm_u32x4_shr(wasm_i32x4_shl(b.val, 16), 16);
+    v128_t b1 = wasm_u32x4_shr(b.val, 16);
+    return v_uint64x2((
+        v_dotprod(v_int32x4(a0), v_int32x4(b0)) +
+        v_dotprod(v_int32x4(a1), v_int32x4(b1))).val
+    );
 }
 inline v_uint64x2 v_dotprod_expand(const v_uint16x8& a, const v_uint16x8& b, const v_uint64x2& c)
-{
-    fallback::v_uint16x8 a_(a);
-    fallback::v_uint16x8 b_(b);
-    fallback::v_uint64x2 c_(c);
-    return fallback::v_dotprod_expand(a_, b_, c_);
-}
+{ return v_dotprod_expand(a, b) + c; }
 
 inline v_int64x2 v_dotprod_expand(const v_int16x8& a, const v_int16x8& b)
 {
-    fallback::v_int16x8 a_(a);
-    fallback::v_int16x8 b_(b);
-    return fallback::v_dotprod_expand(a_, b_);
+    v128_t a0 = wasm_i32x4_shr(wasm_i32x4_shl(a.val, 16), 16);
+    v128_t a1 = wasm_i32x4_shr(a.val, 16);
+    v128_t b0 = wasm_i32x4_shr(wasm_i32x4_shl(b.val, 16), 16);
+    v128_t b1 = wasm_i32x4_shr(b.val, 16);
+    return v_int64x2((
+        v_dotprod(v_int32x4(a0), v_int32x4(b0)) +
+        v_dotprod(v_int32x4(a1), v_int32x4(b1)))
+    );
 }
 
 inline v_int64x2 v_dotprod_expand(const v_int16x8& a, const v_int16x8& b, const v_int64x2& c)
-{
-    fallback::v_int16x8 a_(a);
-    fallback::v_int16x8 b_(b);
-    fallback::v_int64x2 c_(c);
-    return fallback::v_dotprod_expand(a_, b_, c_);
-}
+{ return v_dotprod_expand(a, b) + c; }
 
 // 32 >> 64f
 inline v_float64x2 v_dotprod_expand(const v_int32x4& a, const v_int32x4& b)
@@ -2558,17 +2558,6 @@ OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_float32x4, v_min, wasm_f32x4_min)
 OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_float32x4, v_max, wasm_f32x4_max)
 OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_float64x2, v_min, wasm_f64x2_min)
 OPENCV_HAL_IMPL_WASM_BIN_FUNC(v_float64x2, v_max, wasm_f64x2_max)
-
-// #define OPENCV_HAL_IMPL_WASM_MINMAX_64f_FUNC(func) \
-// inline v_float64x2 func(const v_float64x2& a, const v_float64x2& b) \
-// { \
-//     fallback::v_float64x2 a_(a), b_(b); \
-//     return fallback::func(a_, b_); \
-// }
-
-// OPENCV_HAL_IMPL_WASM_MINMAX_64f_FUNC(v_min)
-// OPENCV_HAL_IMPL_WASM_MINMAX_64f_FUNC(v_max)
-// #endif
 
 #define OPENCV_HAL_IMPL_WASM_MINMAX_S_INIT_FUNC(_Tpvec, suffix) \
 inline _Tpvec v_min(const _Tpvec& a, const _Tpvec& b) \
@@ -3130,23 +3119,8 @@ OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(v_uint16x8, i16x8, short)
 OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(v_int16x8, i16x8, short)
 OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(v_uint32x4, i32x4, int)
 OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(v_int32x4, i32x4, int)
-OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(v_float32x4, i32x4, float)
-// 
+OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(v_float32x4, i32x4, float) 
 OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(v_float64x2, f64x2, double)
-
-// inline int v_signmask(const v_float64x2& a)
-// {
-//     fallback::v_float64x2 a_(a);
-//     return fallback::v_signmask(a_);
-// }
-// inline bool v_check_all(const v_float64x2& a)
-// {
-//     return wasm_i8x16_all_true((__i64x2)(a.val) < (__i64x2)(wasm_i64x2_splat(0)));
-// }
-// inline bool v_check_any(const v_float64x2& a)
-// {
-//     return wasm_i8x16_any_true((__i64x2)(a.val) < (__i64x2)(wasm_i64x2_splat(0)));;
-// }
 
 inline int v_scan_forward(const v_int8x16& a) { return trailingZeros32(v_signmask(v_reinterpret_as_s8(a))); }
 inline int v_scan_forward(const v_uint8x16& a) { return trailingZeros32(v_signmask(v_reinterpret_as_s8(a))); }

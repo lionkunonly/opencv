@@ -2982,9 +2982,21 @@ OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_uint8x16, unsigned)
 OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_int8x16, int)
 OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_uint16x8, unsigned)
 OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_int16x8, int)
-OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_uint64x2, uint64)
-OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_int64x2, int64)
-OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_float64x2, double)
+// OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_uint64x2, uint64)
+// OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_int64x2, int64)
+// OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_float64x2, double)
+
+
+#define OPENCV_HAL_IMPL_WASM_REDUCE_OP_2_SUM(_Tpvec, scalartype, regtype, suffix, esuffix) \
+inline scalartype v_reduce_sum(const _Tpvec& a) \
+{ \
+    regtype val = a.val; \
+    val = wasm_##suffix##_add(val, wasm_v8x16_shuffle(val, val, 8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7)); \
+    return (scalartype)wasm_##esuffix##_extract_lane(val, 0); \
+}
+OPENCV_HAL_IMPL_WASM_REDUCE_OP_2_SUM(v_uint64x2, uint64, v128_t, i64x2, i64x2)
+OPENCV_HAL_IMPL_WASM_REDUCE_OP_2_SUM(v_int64x2, int64,  v128_t, i64x2, i64x2)
+OPENCV_HAL_IMPL_WASM_REDUCE_OP_2_SUM(v_float64x2, double,  v128_t, f64x2,f64x2)
 
 inline v_float32x4 v_reduce_sum4(const v_float32x4& a, const v_float32x4& b,
                                  const v_float32x4& c, const v_float32x4& d)

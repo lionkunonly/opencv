@@ -2718,23 +2718,26 @@ inline v_float64x2 v_absdiff(const v_float64x2& a, const v_float64x2& b)
     return v_float64x2(wasm_v128_and(wasm_f64x2_sub(a.val, b.val), absmask_vec));
 }
 
-#define OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(_Tpvec) \
+#define OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(_Tpvec, suffix) \
 inline _Tpvec v_magnitude(const _Tpvec& a, const _Tpvec& b) \
 { \
-    fallback::_Tpvec a_(a), b_(b); \
-    return fallback::v_magnitude(a_, b_); \
+    v128_t a_Square = wasm_##suffix##_mul(a.val, a.val); \
+    v128_t b_Square = wasm_##suffix##_mul(b.val, b.val); \
+    return _Tpvec(wasm_##suffix##_sqrt(wasm_##suffix##_add(a_Square, b_Square))); \
 } \
 inline _Tpvec v_sqr_magnitude(const _Tpvec& a, const _Tpvec& b) \
 { \
-    return v_fma(a, a, b*b); \
+    v128_t a_Square = wasm_##suffix##_mul(a.val, a.val); \
+    v128_t b_Square = wasm_##suffix##_mul(b.val, b.val); \
+    return _Tpvec(wasm_##suffix##_add(a_Square, b_Square)); \
 } \
 inline _Tpvec v_muladd(const _Tpvec& a, const _Tpvec& b, const _Tpvec& c) \
 { \
-    return v_fma(a, b, c); \
+    return _Tpvec(wasm_##suffix##_add(wasm_##suffix##_mul(a.val, b.val), c.val)); \
 }
 
-OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(v_float32x4)
-OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(v_float64x2)
+OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(v_float32x4, f32x4)
+OPENCV_HAL_IMPL_WASM_MISC_FLT_OP(v_float64x2, f64x2)
 
 #define OPENCV_HAL_IMPL_WASM_SHIFT_OP(_Tpuvec, _Tpsvec, suffix, ssuffix) \
 inline _Tpuvec operator << (const _Tpuvec& a, int imm) \

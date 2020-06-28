@@ -2985,9 +2985,6 @@ OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_uint8x16, unsigned)
 OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_int8x16, int)
 OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_uint16x8, unsigned)
 OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_int16x8, int)
-// OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_uint64x2, uint64)
-// OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_int64x2, int64)
-// OPENCV_HAL_IMPL_FALLBACK_REDUCE_OP_SUM(v_float64x2, double)
 
 
 #define OPENCV_HAL_IMPL_WASM_REDUCE_OP_2_SUM(_Tpvec, scalartype, regtype, suffix, esuffix) \
@@ -3136,6 +3133,26 @@ OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(v_uint32x4, i32x4, int)
 OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(v_int32x4, i32x4, int)
 OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(v_float32x4, i32x4, float) 
 OPENCV_HAL_IMPL_WASM_CHECK_SIGNS(v_float64x2, f64x2, double)
+
+#define OPENCV_HAL_IMPL_WASM_CHECK_ALL_ANY(_Tpvec, suffix, esuffix) \
+inline bool v_check_all(const _Tpvec& a) \
+{ \
+    v128_t masked = v_reinterpret_as_##esuffix(a).val; \
+    masked = wasm_i32x4_replace_lane(masked, 0, 0xffffffff); \
+    masked = wasm_i32x4_replace_lane(masked, 2, 0xffffffff); \
+    return wasm_i8x16_all_true(wasm_##suffix##_lt(masked, wasm_##suffix##_splat(0))); \
+} \
+inline bool v_check_any(const _Tpvec& a) \
+{ \
+    v128_t masked = v_reinterpret_as_##esuffix(a).val; \
+    masked = wasm_i32x4_replace_lane(masked, 0, 0x0); \
+    masked = wasm_i32x4_replace_lane(masked, 2, 0x0); \
+    return wasm_i8x16_any_true(wasm_##suffix##_lt(masked, wasm_##suffix##_splat(0))); \
+} \
+
+OPENCV_HAL_IMPL_WASM_CHECK_ALL_ANY(v_int64x2, i32x4, s32)
+OPENCV_HAL_IMPL_WASM_CHECK_ALL_ANY(v_uint64x2, i32x4, u32)
+
 
 inline int v_scan_forward(const v_int8x16& a) { return trailingZeros32(v_signmask(v_reinterpret_as_s8(a))); }
 inline int v_scan_forward(const v_uint8x16& a) { return trailingZeros32(v_signmask(v_reinterpret_as_s8(a))); }

@@ -65,24 +65,6 @@ function perf() {
     });
   }
 
-  function addMergeCase(suite) {
-    suite.add('Split', function() {
-      cv.merge(planes, mat);
-    }, {
-      'setup': function() {
-        let size = this.params.size;
-        let mat = new cv.Mat();
-        let planes = new cv.MatVector();
-        planes.push_back(cv.Mat.ones(size[0], size[1], cv.CV_64FC1));
-        planes.push_back(cv.Mat.ones(size[0], size[1], cv.CV_64FC1));
-        planes.push_back(cv.Mat.ones(size[0], size[1], cv.CV_64FC1));
-      }, 'teardown': function() {
-        mat.delete();
-        planes.delete();
-      }
-    });
-  }
-
   function setInitParams(suite, sizeArray) {
     for( let i =0; i < suite.length; i++) {
       suite[i].params = {
@@ -98,15 +80,14 @@ function perf() {
     }
   }
 
-  function setBenchmarkSuite(suite, sizeArray) {
+  function setBenchmarkSuite(suite) {
     suite
     // add listeners
     .on('cycle', function(event) {
       ++currentCaseId;
-      let params = event.target.params;
-      let size = params.size;
+      let size = event.target.params.size;
       log(`=== ${event.target.name} ${currentCaseId} ===`);
-      log(`params: (${size[0]}x${size[1]})`);
+      log(`params: (${parseInt(size[0])}x${parseInt(size[1])})`);
       log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
       log('mean time:' +String(event.target.stats.mean*1000)+' ms');
       log('stddev time:' +String(event.target.stats.deviation*1000)+' ms');
@@ -127,7 +108,7 @@ function perf() {
   function genBenchmarkCase(paramsContent) {
     let suite = new Benchmark.Suite;
     var sizeArray;
-    totalCaseNum = 4;
+    totalCaseNum = 3;
     currentCaseId = 0;
     console.log(paramsContent.toString());
     if (/\([0-9]+x[0-9]+\)/g.test(paramsContent.toString())) {
@@ -141,9 +122,8 @@ function perf() {
     addCountNonZeroCase(suite);
     addMatDotCase(suite);
     addSplitCase(suite);
-    addMergeCase(suite);
-    setInitParams(suite)
-    setBenchmarkSuite(suite, sizeArray);
+    setInitParams(suite, sizeArray)
+    setBenchmarkSuite(suite);
     log(`Running ${totalCaseNum} tests from 64-bit intrinsics`);
     suite.run({ 'async': true }); // run the benchmark
   }

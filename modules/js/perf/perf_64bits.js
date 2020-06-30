@@ -65,6 +65,24 @@ function perf() {
     });
   }
 
+  function addMergeCase(suite) {
+    suite.add('Merge', function() {
+      cv.merge(planes, mat);
+    }, {
+      'setup': function() {
+        let size = this.params.size;
+        let mat = new cv.Mat();
+        let mat1 = cv.Mat.ones(size[0], size[1], cv.CV_64FC3); 
+        let planes = new cv.MatVector();
+        cv.split(mat1, planes);
+      }, 'teardown': function() {
+        mat.delete();
+        mat1.delete();
+        planes.delete();
+      }
+    });
+  }
+
   function setInitParams(suite, sizeArray) {
     for( let i =0; i < suite.length; i++) {
       suite[i].params = {
@@ -108,9 +126,8 @@ function perf() {
   function genBenchmarkCase(paramsContent) {
     let suite = new Benchmark.Suite;
     var sizeArray;
-    totalCaseNum = 3;
+    totalCaseNum = 4;
     currentCaseId = 0;
-    console.log(paramsContent.toString());
     if (/\([0-9]+x[0-9]+\)/g.test(paramsContent.toString())) {
       let params = paramsContent.toString().match(/\([0-9]+x[0-9]+\)/g)[0];
       let sizeStrs = (params.match(/[0-9]+/g) || []).slice(0, 2).toString().split(",");
@@ -122,6 +139,7 @@ function perf() {
     addCountNonZeroCase(suite);
     addMatDotCase(suite);
     addSplitCase(suite);
+    addMergeCase(suite);
     setInitParams(suite, sizeArray)
     setBenchmarkSuite(suite);
     log(`Running ${totalCaseNum} tests from 64-bit intrinsics`);

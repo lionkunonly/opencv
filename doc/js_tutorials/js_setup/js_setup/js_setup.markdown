@@ -32,6 +32,8 @@ source ./emsdk_env.sh
 echo ${EMSCRIPTEN}
 @endcode
 
+The version 1.39.16 of emscripten is verified for latest WebAssembly. Please check the version of emscripten to use the newest features of WebAssembly.
+
 Obtaining OpenCV Source Code
 --------------------------
 

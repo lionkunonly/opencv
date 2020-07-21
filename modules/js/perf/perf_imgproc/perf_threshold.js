@@ -20,9 +20,7 @@ function perf() {
     global.cvtStr2cvSize = HelpFunc.cvtStr2cvSize;
     global.cvSize = Base.getCvSize();
   } else {
-    runButton.removeAttribute('disabled');
-    runButton.setAttribute('class', 'btn btn-primary');
-    runButton.innerHTML = 'Run';
+    enableButton();
     cvSize = getCvSize();
   }
   let totalCaseNum, currentCaseId;
@@ -34,77 +32,54 @@ function perf() {
   const combiSizeMatTypeThreshType = combine(typicalMatSizes, matTypes, threshTypes);
   const combiSizeOnly = combine(typicalMatSizes, ['CV_8UC1'], ['THRESH_BINARY|THRESH_OTSU']);
 
-  function addSizeMatTypeThreshTypeCase(suite, combination) {
-    totalCaseNum += combination.length;
-    for (let i = 0; i < combination.length; ++i) {
-      let matSize = combination[i][0];
-      let matType = combination[i][1];
-      let threshType = combination[i][2];
 
-      suite.add('threshold', function() {
+  function addThresholdCase(suite, type) {
+    suite.add('threshold', function() {
+      if (type == "sizeonly") {
+        cv.threshold(src, dst, threshold, thresholdMax, cv.THRESH_BINARY|cv.THRESH_OTSU);
+      } else {
         cv.threshold(src, dst, threshold, thresholdMax, threshType);
-        }, {
-          'setup': function() {
-            let matSize = this.params.matSize;
-            let matType = cv[this.params.matType];
-            let threshType = cv[this.params.threshType];
-            let threshold = 127.0;
-            let thresholdMax = 210.0;
-            let src = new cv.Mat(matSize, matType);
-            let dst = new cv.Mat(matSize, matType);
-            let srcView = src.data;
-            srcView[0] = 0;
-            srcView[1] = 100;
-            srcView[2] = 200;
-              },
-          'teardown': function() {
-            src.delete();
-            dst.delete();
+      }
+      }, {
+        'setup': function() {
+          let matSize = this.params.matSize;
+          let type =  this.params.modeType;
+          let src, dst, matType, threshType;
+          if (type == "sizeonly") {
+            src = new cv.Mat(matSize, cv.CV_8UC1);
+            dst = new cv.Mat(matSize, cv.CV_8UC1);
+          } else {
+            matType = cv[this.params.matType];
+            threshType = cv[this.params.threshType];
+            src = new cv.Mat(matSize, matType);
+            dst = new cv.Mat(matSize, matType);
           }
-      });
-
-      // set init params
-      let index = suite.length - 1;
-      suite[index].params = {
-        matSize: matSize,
-        matType: matType,
-        threshType: threshType
-      };
-    }
+          let threshold = 127.0;
+          let thresholdMax = 210.0;
+          let srcView = src.data;
+          srcView[0] = 0;
+          srcView[1] = 100;
+          srcView[2] = 200;
+            },
+        'teardown': function() {
+          src.delete();
+          dst.delete();
+        }
+    });
   }
 
-  function addSizeOnlyCase(suite, combination) {
+  function addThresholdModecase(suite, combination, type) {
     totalCaseNum += combination.length;
     for (let i = 0; i < combination.length; ++i) {
       let matSize = combination[i][0];
-
-      suite.add('threshold', function() {
-        cv.threshold(src, dst, threshold, thresholdMax, cv.THRESH_BINARY|cv.THRESH_OTSU);
-        }, {
-          'setup': function() {
-            let matSize = this.params.matSize;
-            let threshold = 127.0;
-            let thresholdMax = 210.0;
-            let src = new cv.Mat(matSize, cv.CV_8UC1);
-            let dst = new cv.Mat(matSize, cv.CV_8UC1);
-            let srcView = src.data;
-            srcView[0] = 0;
-            srcView[1] = 100;
-            srcView[2] = 200;
-              },
-          'teardown': function() {
-            src.delete();
-            dst.delete();
-          }
-      });
-
-      // set init params
-      let index = suite.length - 1;
-      suite[index].params = {
-        matSize: matSize,
-        matType: 'CV_8UC1',
-        threshType: 'THRESH_BINARY|THRESH_OTSU'
-      };
+      let matType = 'CV_8UC1';
+      let threshType = 'THRESH_BINARY|THRESH_OTSU';
+      if (type != "sizeonly") {
+        matType = combination[i][1];
+        threshType = combination[i][2];
+      }
+      let params = {matSize: matSize, matType: matType, threshType: threshType, modeType: type};
+      addKernelCase(suite, params, type, addThresholdCase);
     }
   }
 
@@ -126,46 +101,14 @@ function perf() {
       let combination = combinations[i];
       for (let j = 0; j < combination.length; ++j) {
         if (matSize === combination[j][0] && matType === combination[j][1] && threshType === combination[j][2]) {
-          thresholdFunc[i](suite, [combination[j]]);
+          if (i == 0) {
+            addThresholdModecase(suite, [combination[j]], "normal");
+          } else {
+            addThresholdModecase(suite, [combination[j]], "sizeonly");
+          }
         }
       }
     }
-  }
-
-  function log(message) {
-    console.log(message);1
-    if (!isNodeJs) {
-      logElement.innerHTML += `\n${'\t'.repeat(1) + message}`;
-    }
-  }
-
-  function setBenchmarkSuite(suite) {
-    suite
-    // add listeners
-    .on('cycle', function(event) {
-      ++currentCaseId;
-      let params = event.target.params;
-      let matSize = params.matSize;
-      let matType = params.matType;
-      let threshType = params.threshType;
-      log(`=== ${event.target.name} ${currentCaseId} ===`);
-      log(`params: (${parseInt(matSize.width)}x${parseInt(matSize.height)},`+
-          `${matType},${threshType})`);
-      log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
-      log('mean time:' +String(event.target.stats.mean*1000)+' ms');
-      log('stddev time:' +String(event.target.stats.deviation*1000)+' ms');
-      log(String(event.target));
-    })
-    .on('error', function(event) { log(`test case ${event.target.name} failed`); })
-    .on('complete', function(event) {
-      log(`\n ###################################`)
-      log(`Finished testing ${event.currentTarget.length} cases \n`);
-      if (!isNodeJs) {
-        runButton.removeAttribute('disabled');
-        runButton.setAttribute('class', 'btn btn-primary');
-        runButton.innerHTML = 'Run';
-      }
-    });
   }
 
   function genBenchmarkCase(paramsContent) {
@@ -183,16 +126,15 @@ function perf() {
     }
     else {
       log("no filter or getting invalid params, run all the cases");
-      addSizeMatTypeThreshTypeCase(suite, combiSizeMatTypeThreshType);
-      addSizeOnlyCase(suite, combiSizeOnly);
+      addThresholdModecase(suite, combiSizeMatTypeThreshType, "normal");
+      addThresholdModecase(suite, combiSizeOnly, "sizeonly");
     }
-    setBenchmarkSuite(suite);
+    setBenchmarkSuite(suite, "threshold", currentCaseId);
     log(`Running ${totalCaseNum} tests from Threshold`);
     suite.run({ 'async': true }); // run the benchmark
   }
 
   // init
-  let thresholdFunc = [addSizeMatTypeThreshTypeCase, addSizeOnlyCase];
   let combinations = [combiSizeMatTypeThreshType, combiSizeOnly];
 
   // set test filter params
@@ -210,9 +152,7 @@ function perf() {
       let paramsContent = paramsElement.value;
       genBenchmarkCase(paramsContent);
       if (totalCaseNum !== 0) {
-        runButton.setAttribute("disabled", "disabled");
-        runButton.setAttribute('class', 'btn btn-primary disabled');
-        runButton.innerHTML = "Running";
+        disableButton();
       }
     }
   }

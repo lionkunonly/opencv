@@ -54,8 +54,98 @@ function permute (source, target) {
   return result;
 }
 
+var constructMode = function (startStr, sChannel, dChannel) {
+  let modeList = []
+  for (let j in dChannel) {
+    modeList.push(startStr+sChannel+"2"+dChannel[j])
+  }
+  return modeList;
+}
+
+var enableButton = function () {
+  runButton.removeAttribute('disabled');
+  runButton.setAttribute('class', 'btn btn-primary');
+  runButton.innerHTML = 'Run';
+}
+
+var disableButton = function () {
+  runButton.setAttribute("disabled", "disabled");
+  runButton.setAttribute('class', 'btn btn-primary disabled');
+  runButton.innerHTML = "Running";
+}
+
+var log = function (message) {
+  console.log(message);
+  if (!isNodeJs) {
+    logElement.innerHTML += `\n${'\t' + message}`;
+  }
+}
+
+var addKernelCase = function (suite, params, type, kernelFunc) {
+  kernelFunc(suite, type);
+  let index = suite.length - 1;
+  suite[index].params = params;
+}
+
+function constructParamLog(params, kernel) {
+  let paramLog = '';
+  if (kernel == "cvtcolor") {
+    let mode = params.mode;
+    let size = params.size;
+    console.log(size);
+    paramLog = `params: (${parseInt(size[0])}x${parseInt(size[1])}, ${mode})`;
+  } else if (kernel == "resize") {
+    let matType = params.matType;
+    let size1 = params.from;
+    let size2 = params.to;
+    paramLog = `params: (${matType},${parseInt(size1.width)}x${parseInt(size1.height)},`+
+    `${parseInt(size2.width)}x${parseInt(size2.height)})`;
+  } else if (kernel == "threshold") {
+    let matSize = params.matSize;
+    let matType = params.matType;
+    let threshType = params.threshType;
+    paramLog = `params: (${parseInt(matSize.width)}x${parseInt(matSize.height)},`+
+    `${matType},${threshType})`
+  }
+  return paramLog;
+}
+
+var setBenchmarkSuite =  function (suite, kernel, currentCaseId) {
+  suite
+  // add listeners
+  .on('cycle', function(event) {
+    ++currentCaseId;
+    let params = event.target.params;
+    paramLog = constructParamLog(params, kernel);
+
+    log(`=== ${event.target.name} ${currentCaseId} ===`);
+    log(paramLog);
+    log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
+    log('mean time:' +String(event.target.stats.mean*1000)+' ms');
+    log('stddev time:' +String(event.target.stats.deviation*1000)+' ms');
+    log(String(event.target));
+  })
+  .on('error', function(event) { log(`test case ${event.target.name} failed`); })
+  .on('complete', function(event) {
+    log(`\n ###################################`)
+    log(`Finished testing ${event.currentTarget.length} cases \n`);
+    if (!isNodeJs) {
+      runButton.removeAttribute('disabled');
+      runButton.setAttribute('class', 'btn btn-primary');
+      runButton.innerHTML = 'Run';
+    }
+  });
+}
+
+
 if (typeof window === 'undefined') {
+  exports.enableButton = enableButton;
+  exports.disableButton = disableButton;
   exports.fillGradient = fillGradient;
   exports.cvtStr2cvSize = cvtStr2cvSize;
   exports.combine = combine;
+  exports.constructMode = constructMode;
+  exports.log = log;
+  exports.setBenchmarkSuite = setBenchmarkSuite;
+  exports.addKernelCase = addKernelCase;
 }

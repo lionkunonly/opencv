@@ -20,9 +20,7 @@ function perf() {
     global.cvtStr2cvSize = HelpFunc.cvtStr2cvSize;
     global.cvSize = Base.getCvSize();
   } else {
-    runButton.removeAttribute('disabled');
-    runButton.setAttribute('class', 'btn btn-primary');
-    runButton.innerHTML = 'Run';
+    enableButton();
     cvSize = getCvSize();
   }
   let totalCaseNum, currentCaseId;
@@ -60,108 +58,49 @@ function perf() {
   const scalesAreaFast = [2];
   const combiAreaFast = combine(matTypesAreaFast, sizesAreaFast, scalesAreaFast);
 
-  function addResizeUpLinearCase(suite, combination) {
-    totalCaseNum += combination.length;
-    for (let i = 0; i < combination.length; ++i) {
-      let matType = combination[i][0];
-      let from = combination[i][1];
-      let to = combination[i][2];
-
-      suite.add('resize', function() {
-        cv.resize(src, dst, to, 0, 0, cv.INTER_LINEAR_EXACT);
-        }, {
-          'setup': function() {
-            let from = this.params.from;
-            let to = this.params.to;
-            let matType = cv[this.params.matType];
-            let src = new cv.Mat(from, matType);
-            let dst = new cv.Mat(to, matType);
-            fillGradient(cv, src);
-              },
-          'teardown': function() {
-            src.delete();
-            dst.delete();
-          }
-      });
-
-      // set init params
-      let index = suite.length - 1;
-      suite[index].params = {
-        from: from,
-        to: to,
-        matType: matType
-      };
-    }
-  }
-
-  function addResizeDownLinearCase(suite, combination) {
-    totalCaseNum += combination.length;
-    for (let i = 0; i < combination.length; ++i) {
-      let matType = combination[i][0];
-      let from = combination[i][1];
-      let to = combination[i][2];
-
-      suite.add('resize', function() {
-        cv.resize(src, dst, to, 0, 0, cv.INTER_LINEAR_EXACT);
-        }, {
-          'setup': function() {
-            let from = this.params.from;
-            let to = this.params.to;
-            let matType = cv[this.params.matType];
-            let src = new cv.Mat(from, matType);
-            let dst = new cv.Mat(to, matType);
-            fillGradient(cv, src);
-              },
-          'teardown': function() {
-            src.delete();
-            dst.delete();
-          }
-      });
-
-      // set init params
-      let index = suite.length - 1;
-      suite[index].params = {
-        from: from,
-        to: to,
-        matType: matType
-      };
-    }
-  }
-
-  function addResizeAreaFastCase(suite, combination) {
-    totalCaseNum += combination.length;
-    for (let i = 0; i < combination.length; ++i) {
-      let matType = combination[i][0];
-      let from = combination[i][1];
-      let scale = combination[i][2];
-      from.width = (Math.floor(from.width/scale))*scale;
-      from.height = (Math.floor(from.height/scale))*scale;
-      let to = {
-        width: from.width/scale,
-        height: from.height/scale};  // for params print
-
-      suite.add('resize', function() {
+  function addResizeCase(suite, type) {
+    suite.add('resize', function() {
+      if (type == "area") {
         cv.resize(src, dst, dst.size(), 0, 0, cv.INTER_AREA);
-        }, {
-          'setup': function() {
-            let from = this.params.from;
-            let scale = this.params.scale;
-            let matType = cv[this.params.matType];
-            let src = new cv.Mat(from, matType);
-            let dst = new cv.Mat(from.height/scale, from.width/scale, matType);
-              },
-          'teardown': function() {
-            src.delete();
-            dst.delete();
+      } else {
+        cv.resize(src, dst, to, 0, 0, cv.INTER_LINEAR_EXACT);
+      }
+    }, {
+        'setup': function() {
+          let from = this.params.from;
+          let to = this.params.to;
+          let matType = cv[this.params.matType];
+          let src = new cv.Mat(from, matType);
+          let type = this.params.modeType;
+          let dst; 
+          if (type == "area") {
+            dst = new cv.Mat(from.height/scale, from.width/scale, matType);
+          } else {
+            dst = new cv.Mat(to, matType);
+            fillGradient(cv, src);
           }
-      });
-      // set init params
-      let index = suite.length - 1;
-      suite[index].params = {
-        from: from,
-        scale: scale,
-        matType: matType
-      };
+          },
+        'teardown': function() {
+          src.delete();
+          dst.delete();
+        }
+    });
+  }
+
+  function addResizeModeCase(suite, combination, type) {
+    totalCaseNum += combination.length;
+    for (let i = 0; i < combination.length; ++i) {
+      let matType = combination[i][0];
+      let from = combination[i][1];
+      let params;
+      if (type == "area") {
+        let scale = combination[i][2];
+        params = { from: from, scale: scale, matType: matType, modeType: type };
+      } else {
+        let to = combination[i][2];
+        params = { from: from, to: to, matType: matType, modeType: type};
+      }
+      addKernelCase(suite, params, type, addResizeCase)
     }
   }
 
@@ -178,46 +117,10 @@ function perf() {
       let combination = combinations[i];
       for (let j = 0; j < combination.length; ++j) {
         if (matType === combination[j][0] && size1 === combination[j][1] && size2 === combination[j][2]) {
-          resizeFunc[i](suite, [combination[j]]);
+          addResizeModeCase(suite, [combination[j]], "linear");
         }
       }
     }
-  }
-
-  function log(message) {
-    console.log(message);
-    if (!isNodeJs) {
-      logElement.innerHTML += `\n${'\t'.repeat(1) + message}`;
-    }
-  }
-
-  function setBenchmarkSuite(suite) {
-    suite
-    // add listeners
-    .on('cycle', function(event) {
-      ++currentCaseId;
-      let params = event.target.params;
-      let matType = params.matType;
-      let size1 = params.from;
-      let size2 = params.to;
-      log(`=== ${event.target.name} ${currentCaseId} ===`);
-      log(`params: (${matType},${parseInt(size1.width)}x${parseInt(size1.height)},`+
-          `${parseInt(size2.width)}x${parseInt(size2.height)})`);
-      log('elapsed time:' +String(event.target.times.elapsed*1000)+' ms');
-      log('mean time:' +String(event.target.stats.mean*1000)+' ms');
-      log('stddev time:' +String(event.target.stats.deviation*1000)+' ms');
-      log(String(event.target));
-    })
-    .on('error', function(event) { log(`test case ${event.target.name} failed`); })
-    .on('complete', function(event) {
-      log(`\n ###################################`)
-      log(`Finished testing ${event.currentTarget.length} cases \n`);
-      if (!isNodeJs) {
-        runButton.removeAttribute('disabled');
-        runButton.setAttribute('class', 'btn btn-primary');
-        runButton.innerHTML = 'Run';
-      }
-    });
   }
 
   function genBenchmarkCase(paramsContent) {
@@ -229,16 +132,15 @@ function perf() {
       decodeParams2Case(suite, params);
     } else {
       log("no filter or getting invalid params, run all the cases");
-      addResizeUpLinearCase(suite, combiUpLinear);
-      addResizeDownLinearCase(suite, combiDownLinear);
+      addResizeModeCase(suite, combiUpLinear, "linear");
+      addResizeModeCase(suite, combiDownLinear, "linear");
     }
-    setBenchmarkSuite(suite);
+    setBenchmarkSuite(suite, "resize", currentCaseId);
     log(`Running ${totalCaseNum} tests from Resize`);
     suite.run({ 'async': true }); // run the benchmark
   }
 
   // init
-  let resizeFunc = [addResizeUpLinearCase, addResizeDownLinearCase];//, addResizeAreaFastCase];
   let combinations = [combiUpLinear, combiDownLinear];//, combiAreaFast];
 
   // set test filter params
@@ -254,9 +156,7 @@ function perf() {
       let paramsContent = paramsElement.value;
       genBenchmarkCase(paramsContent);
       if (totalCaseNum !== 0) {
-        runButton.setAttribute("disabled", "disabled");
-        runButton.setAttribute('class', 'btn btn-primary disabled');
-        runButton.innerHTML = "Running";
+        disableButton();
       }
     }
   }

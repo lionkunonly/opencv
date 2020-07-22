@@ -358,7 +358,7 @@ function perf() {
       for (let i = 0; i < locationList.length; i++){
         let first = locationList[i][0];
         let second = locationList[i][1];
-        if (first > 1) {
+        if (first < 2) {
           addCvtModeCase(suite, [combinations[first][second]], 0);
         } else {
           addCvtModeCase(suite, [combinations[first][second]], 1);

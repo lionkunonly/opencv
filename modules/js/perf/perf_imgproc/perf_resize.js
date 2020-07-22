@@ -104,32 +104,23 @@ function perf() {
     }
   }
 
-  function decodeParams2Case(suite, params) {
-    let sizeString = (params.match(/[0-9]+x[0-9]+/g) || []).slice(0, 2).toString();
-    let sizes = (sizeString.match(/[0-9]+/g) || []);
-    let size1Str = sizes.slice(0, 2).toString();
-    let size2Str = sizes.slice(2, 5).toString();
-    let matType = (params.match(/CV\_[0-9]+[A-z][A-z][0-9]/) || []).toString();
-    let size1 = cvtStr2cvSize(size1Str);
-    let size2 = cvtStr2cvSize(size2Str);
-    // check if the params match and add case
-    for (let i = 0; i < combinations.length; ++i) {
-      let combination = combinations[i];
-      for (let j = 0; j < combination.length; ++j) {
-        if (matType === combination[j][0] && size1 === combination[j][1] && size2 === combination[j][2]) {
-          addResizeModeCase(suite, [combination[j]], "linear");
-        }
-      }
-    }
-  }
-
   function genBenchmarkCase(paramsContent) {
     let suite = new Benchmark.Suite;
     totalCaseNum = 0;
     currentCaseId = 0;
     if (/\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g.test(paramsContent.toString())) {
       let params = paramsContent.toString().match(/\(\w+,[\ ]*[0-9]+x[0-9]+,[\ ]*[0-9]+x[0-9]+\)/g)[0];
-      decodeParams2Case(suite, params);
+      let paramObjs = [];
+      paramObjs.push({name:"matType", value:"", reg:["/CV\_[0-9]+[A-z][A-z][0-9]/"], index:0});
+      paramObjs.push({name:"size1", value:"", reg:[""], index:1});
+      paramObjs.push({name:"size2", value:"", reg:[""], index:2});
+      let locationList = decodeParams2Case(params, paramObjs,combinations);
+
+      for (let i = 0; i < locationList.length; i++){
+        let first = locationList[i][0];
+        let second = locationList[i][1];
+        addResizeModeCase(suite, [combinations[first][second]], "linear");
+      }
     } else {
       log("no filter or getting invalid params, run all the cases");
       addResizeModeCase(suite, combiUpLinear, "linear");

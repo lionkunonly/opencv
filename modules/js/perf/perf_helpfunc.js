@@ -92,7 +92,6 @@ function constructParamLog(params, kernel) {
   if (kernel == "cvtcolor") {
     let mode = params.mode;
     let size = params.size;
-    console.log(size);
     paramLog = `params: (${parseInt(size[0])}x${parseInt(size[1])}, ${mode})`;
   } else if (kernel == "resize") {
     let matType = params.matType;
@@ -137,6 +136,59 @@ var setBenchmarkSuite =  function (suite, kernel, currentCaseId) {
   });
 }
 
+var decodeParams2Case = function(paramContent, paramsList, combinations) {
+  let sizeString = (paramContent.match(/[0-9]+x[0-9]+/g) || []).toString();
+  let sizes = (sizeString.match(/[0-9]+/g) || []);
+  let paramSize = paramsList.length;
+  let paramObjs = []
+  let sizeCount = 0;
+  for (let i = 0; i < paramSize; i++) {
+      let param = paramsList[i];
+      let paramName = param.name;
+      let paramValue = param.value;
+      let paramReg = param.reg;
+      let paramIndex = param.index;
+
+      if(paramValue != "") {
+        paramObjs.push({name: paramName, value: paramValue, index: paramIndex});
+      } else if (paramName.startsWith('size')) {
+        let sizeStr = sizes.slice(sizeCount, sizeCount+2).toString();
+        paramValue = cvtStr2cvSize(sizeStr);
+        sizeCount += 2;
+        paramObjs.push({name: paramName, value: paramValue, index: paramIndex});
+      } else {
+        for (let index in paramReg) {
+          let reg = eval(paramReg[index]);
+          paramValue = (paramContent.match(reg) || []).toString();
+          if (paramValue != "") {
+            paramObjs.push({name: paramName, value: paramValue, index: paramIndex});
+            break;
+          }
+        }
+      }
+  }
+
+  let location = [];
+  for (let i = 0; i < combinations.length; ++i) {
+    let combination = combinations[i];
+    for (let j = 0; j < combination.length; ++j) {
+      if (judgeCombin(combination[j], paramObjs)) {
+        location.push([i,j]);
+      }
+    }
+  }
+  return location;
+}
+
+function judgeCombin(combination, paramObjs) {
+  for (let i =0; i < paramObjs.length; i++) {
+    if (paramObjs[i].value != combination[paramObjs[i].index]){
+      return false;
+    }
+  }
+  return true;
+}
+
 
 if (typeof window === 'undefined') {
   exports.enableButton = enableButton;
@@ -146,6 +198,7 @@ if (typeof window === 'undefined') {
   exports.combine = combine;
   exports.constructMode = constructMode;
   exports.log = log;
+  exports.decodeParams2Case = decodeParams2Case;
   exports.setBenchmarkSuite = setBenchmarkSuite;
   exports.addKernelCase = addKernelCase;
 }

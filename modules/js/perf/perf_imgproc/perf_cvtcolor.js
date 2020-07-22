@@ -145,11 +145,6 @@ function perf() {
   // combiCvtMode permute size and mode
   const combiCvtMode = combine(CvtModeSize, CvtMode);
 
-  console.log("Construct the CvtMode in order over");
-  console.log(CvtMode16U.length);
-  console.log(CvtMode32F.length);
-  console.log(CvtMode.length);
-
   const CvtModeBayer = [
     "COLOR_BayerBG2BGR", "COLOR_BayerBG2BGRA", "COLOR_BayerBG2BGR_VNG", "COLOR_BayerBG2GRAY",
     "COLOR_BayerGB2BGR", "COLOR_BayerGB2BGRA", "COLOR_BayerGB2BGR_VNG", "COLOR_BayerGB2GRAY",
@@ -349,33 +344,26 @@ function perf() {
     };
   }
 
-  function decodeParams2Case(suite, params) {
-    let sizeStr = (params.match(/[0-9]+/g) || []).slice(0, 2).toString();
-    let mode = (params.match(/CX\_[A-z]+2[A-z]+/) || params.match(/COLOR\_[A-z]+2[A-z]+/) || []).toString();
-    let size = cvtStr2cvSize(sizeStr);
-
-    // check if the params match and add case
-    for (let i = 0; i < combinations.length; ++i) {
-      let combination = combinations[i];
-      for (let j = 0; j < combination.length; ++j) {
-        if (size === combination[j][0] && mode === combination[j][1]) {
-          if (i > 1) {
-            addCvtModeCase(suite, [combination[j]], 0);
-          } else {
-            addCvtModeCase(suite, [combination[j]], 1);
-          }
-        }
-      }
-    }
-  }
-
   function genBenchmarkCase(paramsContent) {
     let suite = new Benchmark.Suite;
     totalCaseNum = 0;
     currentCaseId = 0;
     if (/\([0-9]+x[0-9]+,[\ ]*\w+\)/g.test(paramsContent.toString())) {
       let params = paramsContent.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+\)/g)[0];
-      decodeParams2Case(suite, params);
+      let paramObjs = [];
+      paramObjs.push({name:"mode", value:"", reg:["/CX\_[A-z]+2[A-z]+/", "/COLOR\_[A-z]+2[A-z]+/"], index:1});
+      paramObjs.push({name:"size", value:"", reg:[""], index:0});
+      
+      let locationList = decodeParams2Case(params, paramObjs,combinations);
+      for (let i = 0; i < locationList.length; i++){
+        let first = locationList[i][0];
+        let second = locationList[i][1];
+        if (first > 1) {
+          addCvtModeCase(suite, [combinations[first][second]], 0);
+        } else {
+          addCvtModeCase(suite, [combinations[first][second]], 1);
+        }
+      }
     } else {
       log("no filter or getting invalid params, run all the cases");
       addCvtModeCase(suite, combiCvtMode, 0);

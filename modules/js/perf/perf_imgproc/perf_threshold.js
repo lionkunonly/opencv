@@ -83,48 +83,36 @@ function perf() {
     }
   }
 
-  function decodeParams2Case(suite, params, isSizeOnly) {
-    let sizeString = params.match(/[0-9]+x[0-9]+/g).toString();
-    let sizes = sizeString.match(/[0-9]+/g);
-    let size1Str = sizes.slice(0, 2).toString();
-    let matSize = cvtStr2cvSize(size1Str);
-    let matType, threshType;
-    if (isSizeOnly) {
-      matType = 'CV_8UC1';
-      threshType = 'THRESH_BINARY|THRESH_OTSU';
-    } else {
-      matType = (params.match(/CV\_[0-9]+[A-z][A-z][0-9]/) || []).toString();
-      threshType = (params.match(/THRESH\_[A-z]+\_?[A-z]*/) || []).toString();
-    }
-    // check if the params match and add case
-    for (let i = 0; i < combinations.length; ++i) {
-      let combination = combinations[i];
-      for (let j = 0; j < combination.length; ++j) {
-        if (matSize === combination[j][0] && matType === combination[j][1] && threshType === combination[j][2]) {
-          if (i == 0) {
-            addThresholdModecase(suite, [combination[j]], "normal");
-          } else {
-            addThresholdModecase(suite, [combination[j]], "sizeonly");
-          }
-        }
-      }
-    }
-  }
-
   function genBenchmarkCase(paramsContent) {
     let suite = new Benchmark.Suite;
     totalCaseNum = 0;
     currentCaseId = 0;
+    let params = "";
+    let paramObjs = [];
+    paramObjs.push({name:"size", value:"", reg:[""], index:0});
+
     if (/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\w+\)/g.test(paramsContent.toString())) {
-      let params = paramsContent.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\w+\)/g)[0];
-      let isSizeOnly = 0;
-      decodeParams2Case(suite, params, isSizeOnly);
+      params = paramsContent.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\w+\)/g)[0];
+      paramObjs.push({name:"matType", value:"", reg:["/CV\_[0-9]+[A-z][A-z][0-9]/"], index:1});
+      paramObjs.push({name:"threshType", value:"", reg:["/THRESH\_[A-z]+\_?[A-z]*/"], index:2});
     } else if (/[\ ]*[0-9]+x[0-9]+[\ ]*/g.test(paramsContent.toString())) {
-      let params = paramsContent.toString().match(/[\ ]*[0-9]+x[0-9]+[\ ]*/g)[0];
-      let isSizeOnly = 1;
-      decodeParams2Case(suite, params, isSizeOnly);
+      params = paramsContent.toString().match(/[\ ]*[0-9]+x[0-9]+[\ ]*/g)[0];
+      paramObjs.push({name:"matType", value:"CV_8UC1", reg:[""], index:1});
+      paramObjs.push({name:"threshType", value:"THRESH_BINARY|THRESH_OTSU", reg:[""], index:2});
     }
-    else {
+
+    if(params != ""){
+      let locationList = decodeParams2Case(params, paramObjs,combinations);
+      for (let i = 0; i < locationList.length; i++){
+        let first = locationList[i][0];
+        let second = locationList[i][1];
+        if (first == 0) {
+          addThresholdModecase(suite, [combinations[first][second]], "normal");
+        } else {
+          addThresholdModecase(suite, [combinations[first][second]], "sizeonly");
+        }
+      }
+    } else {
       log("no filter or getting invalid params, run all the cases");
       addThresholdModecase(suite, combiSizeMatTypeThreshType, "normal");
       addThresholdModecase(suite, combiSizeOnly, "sizeonly");

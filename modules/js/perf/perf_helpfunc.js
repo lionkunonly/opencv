@@ -104,7 +104,16 @@ function constructParamLog(params, kernel) {
     let matType = params.matType;
     let threshType = params.threshType;
     paramLog = `params: (${parseInt(matSize.width)}x${parseInt(matSize.height)},`+
-    `${matType},${threshType})`
+    `${matType},${threshType})`;
+  } else if (kernel == "sobel") {
+    let size = params.size;
+    let matType = params.matType;
+    let ddepth = params.ddepth;
+    let direction = params.direction;
+    let ksize = params.ksize;
+    let borderType = params.borderType;
+    paramLog = `params: (${parseInt(size.width)}x${parseInt(size.height)},`+
+    `${matType},${ddepth},${direction},${ksize},${borderType})`;
   }
   return paramLog;
 }
@@ -159,7 +168,12 @@ var decodeParams2Case = function(paramContent, paramsList, combinations) {
       } else {
         for (let index in paramReg) {
           let reg = eval(paramReg[index]);
-          paramValue = (paramContent.match(reg) || []).toString();
+          if ('loc' in param) {
+            paramValue = (paramContent.match(reg) || [])[param.loc].toString();
+          } else {
+            paramValue = (paramContent.match(reg) || []).toString();
+          }
+
           if (paramValue != "") {
             paramObjs.push({name: paramName, value: paramValue, index: paramIndex});
             break;

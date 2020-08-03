@@ -47,7 +47,7 @@ function perf() {
                 let ddepth = cv[this.params.ddepth];
                 let dxdy = this.params.dxdy;
                 let ksize = this.params.ksize;
-                // let borderType =cv[this.params.borderType];
+                
                 let src = new cv.Mat(size[1], size[0], cv.CV_8U);
                 let dst = new cv.Mat(size[1], size[0], ddepth);
                 let dx = parseInt(dxdy[1]);

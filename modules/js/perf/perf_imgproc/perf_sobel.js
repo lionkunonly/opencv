@@ -99,8 +99,8 @@ function perf() {
         let params = "";
         let paramObjs = [];
         paramObjs.push({name:"size", value:"", reg:[""], index:0});
-        paramObjs.push({name:"ddepth", value:"", reg:["/CV\_[0-9]+[A-z]+[A-z]+[0-9]/g"], index:1});
-        paramObjs.push({name:"dxdy", value:"", reg:["/\\([0-2]+,[0-2]\\)/"], index:2});
+        paramObjs.push({name:"ddepth", value:"", reg:["/CV\_[0-9]+[FSUfsu]C1/g"], index:1});
+        paramObjs.push({name:"dxdy", value:"", reg:["/\\([0-2],[0-2]\\)/"], index:2});
 
         if (/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\([0-2],[0-2]\)+,[\ ]*\w+\)/g.test(paramsContent.toString())) {
             params = paramsContent.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\([0-2],[0-2]\)+,[\ ]*\w+\)/g)[0];

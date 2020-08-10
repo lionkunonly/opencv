@@ -128,10 +128,10 @@ function perf() {
               }
         } else {
           log("no filter or getting invalid params, run all the cases");
-          addSobelModeCase(suite, combiSobelBorder3x3, 3);
-          addSobelModeCase(suite, combiSobelBorder3x3ROI, 3);
-          addSobelModeCase(suite, combiSobelBorder5x5, 5);
-          addSobelModeCase(suite, combiSobelBorder5x5ROI, 5);
+          addSobelModeCase(suite, combiSobelBorder3x3, 0);
+          addSobelModeCase(suite, combiSobelBorder3x3ROI, 1);
+          addSobelModeCase(suite, combiSobelBorder5x5, 2);
+          addSobelModeCase(suite, combiSobelBorder5x5ROI, 3);
         }
         setBenchmarkSuite(suite, "sobel", currentCaseId);
         log(`Running ${totalCaseNum} tests from Sobel`);

@@ -48,8 +48,21 @@ function perf() {
                 let dxdy = this.params.dxdy;
                 let ksize = this.params.ksize;
                 
-                let src = new cv.Mat(size[1], size[0], cv.CV_8U);
-                let dst = new cv.Mat(size[1], size[0], ddepth);
+                let type = this.params.type;
+                let src, dst;
+                
+                if (type %2 == 0) {
+                  src = new cv.Mat(size[1], size[0], cv.CV_8U);
+                  dst = new cv.Mat(size[1], size[0], ddepth);
+                } else {
+                  src = new cv.Mat(size[1]+10, size[0]+10, cv.CV_8U);
+                  dst = new cv.Mat(size[1]+10, size[0]+10, ddepth);
+                  src = src.colRange(5, size[0]+5);
+                  src = src.rowRange(5, size[1]+5);
+                  dst = dst.colRange(5, size[0]+5);
+                  dst = dst.rowRange(5, size[1]+5);
+                }
+
                 let dx = parseInt(dxdy[1]);
                 let dy = parseInt(dxdy[3]);
                 let borderTypeArray = this.params.borderType;
@@ -74,20 +87,16 @@ function perf() {
         let ddepth = combination[i][1];
         let dxdy = combination[i][2];
         let borderType = combination[i][3];
-        let ksize, sizeArray;
+        let sizeArray = [size.width, size.height];
+        let ksize;
         if (type < 2) {
           ksize = 3;
         } else {
           ksize = 5;
         }
 
-        if (type %2 == 0) {
-          sizeArray = [size.width, size.height];
-        } else {
-          sizeArray = [size.width+10, size.height+10];
-        }
         let borderTypeArray = borderType.split("|");
-        let params = {size: sizeArray, ddepth: ddepth, dxdy: dxdy, ksize:ksize, borderType:borderTypeArray};
+        let params = {size: sizeArray, ddepth: ddepth, dxdy: dxdy, ksize:ksize, borderType:borderTypeArray, type:type};
         addKernelCase(suite, params, type, addSobelCase);
       }
     }

@@ -51,7 +51,7 @@ function perf() {
                 let src = new cv.Mat(size[1], size[0], cv.CV_8U);
                 let dst = new cv.Mat(size[1], size[0], ddepth);
                 let dx = parseInt(dxdy[1]);
-                let dy = parseInt(dxdy[dxdy.length-2]);
+                let dy = parseInt(dxdy[3]);
                 let borderTypeArray = this.params.borderType;
                 let borderType;
                 if (borderTypeArray.length == 1) {

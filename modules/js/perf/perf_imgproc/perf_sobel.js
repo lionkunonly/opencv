@@ -25,20 +25,18 @@ function perf() {
     }
     let totalCaseNum, currentCaseId;
 
-    //input design
-    //(size, matType, ddepth, direction, ksize, borderType). Example: (640x480, CV_8U, CV_8U, dx, k_1, BORDER_DEFAULT)
-    // const SobelSize = [cvSize.szODD, cvSize.szQVGA, cvSize.szVGA, cvSize.szqHD, cvSize.sz720p, cvSize.sz1080p];
-    const SobelSize = [cvSize.szVGA, cvSize.sz720p, cvSize.sz1080p];
-    const SobelDirection = ["dx", "dy"];
-    const SobelKsize = ["k_1", "k_3", "k_5", "k_7"];
-    const SobelBoderType = ["BORDER_CONSTANT", "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT_101","BORDER_TRANSPARENT", 
-        "BORDER_REFLECT101", "BORDER_DEFAULT", "BORDER_ISOLATED"];
+    const SobelSize = [cvSize.szODD, cvSize.szQVGA, cvSize.szVGA];
+    const Sobel3x3dxdy = ["(0,1)", "(1,0)", "(1,1)", "(0,2)", "(2,0)", "(2,2)"];
+    const Sobeldxdy = ["(0,1)", "(1,0)", "(1,1)", "(0,2)", "(2,0)"];
+    const BorderType3x3 = ["BORDER_REPLICATE", "BORDER_CONSTANT"];
+    const BorderType3x3ROI = ["BORDER_DEFAULT", "BORDER_REPLICATE|BORDER_ISOLATED", "BORDER_CONSTANT|BORDER_ISOLATED"];
+    const BorderType = ["BORDER_REPLICATE", "BORDER_CONSTANT", "BORDER_REFLECT", "BORDER_REFLECT101"];
+    const BorderTypeROI = ["BORDER_DEFAULT", "BORDER_REPLICATE|BORDER_ISOLATED", "BORDER_CONSTANT|BORDER_ISOLATED", "BORDER_REFLECT|BORDER_ISOLATED", "BORDER_REFLECT101|BORDER_ISOLATED"]
 
-    const combiSobelMode8U = combine(SobelSize, ["CV_8U"], ["CV_8U", "CV_16S", "CV_32F", "CV_64F"], SobelDirection, SobelKsize, SobelBoderType);
-    const combiSobelMode16U = combine(SobelSize, ["CV_16U"], ["CV_16U", "CV_32F", "CV_64F"], SobelDirection, SobelKsize, SobelBoderType);
-    const combiSobelMode16S = combine(SobelSize, ["CV_16S"], ["CV_16S", "CV_32F", "CV_64F"], SobelDirection, SobelKsize, SobelBoderType);
-    const combiSobelMode32F = combine(SobelSize, ["CV_32F"], ["CV_32F", "CV_64F"], SobelDirection, SobelKsize, SobelBoderType);
-    const combiSobelMode64F = combine(SobelSize, ["CV_64F"], ["CV_64F"], SobelDirection, SobelKsize, SobelBoderType);
+    const combiSobelBorder3x3 = combine(SobelSize, ["CV_16SC1", "CV_32FC1"], Sobel3x3dxdy, BorderType3x3);
+    const combiSobelBorder3x3ROI = combine(SobelSize, ["CV_16SC1", "CV_32FC1"], Sobel3x3dxdy, BorderType3x3ROI);
+    const combiSobelBorder5x5 = combine(SobelSize, ["CV_16SC1", "CV_32FC1"], Sobeldxdy, BorderType);
+    const combiSobelBorder5x5ROI = combine(SobelSize, ["CV_16SC1", "CV_32FC1"], Sobeldxdy, BorderTypeROI);
 
     function addSobelCase(suite, type) {
         suite.add('sobel', function() {
@@ -46,22 +44,34 @@ function perf() {
           }, {
               'setup': function() {
                 let size = this.params.size;
-                let matType = cv[this.params.matType];
                 let ddepth = cv[this.params.ddepth];
-                let direction = this.params.direction;
-                let ksize = parseInt(this.params.ksize.split("_").pop());
-                let borderType =cv[this.params.borderType];
-                let src = new cv.Mat(size, matType);
-                let dst = new cv.Mat(size, matType);
-                let dx = 0;
-                let dy = 0;
-
-                if (ddepth == matType) {
-                  ddepth = -1;
-                }
+                let dxdy = this.params.dxdy;
+                let ksize = this.params.ksize;
                 
-                if (direction == "dx") {dx = 1;}
-                else {dy = 1;}
+                let type = this.params.type;
+                let src, dst;
+                
+                if (type %2 == 0) {
+                  src = new cv.Mat(size[1], size[0], cv.CV_8U);
+                  dst = new cv.Mat(size[1], size[0], ddepth);
+                } else {
+                  src = new cv.Mat(size[1]+10, size[0]+10, cv.CV_8U);
+                  dst = new cv.Mat(size[1]+10, size[0]+10, ddepth);
+                  src = src.colRange(5, size[0]+5);
+                  src = src.rowRange(5, size[1]+5);
+                  dst = dst.colRange(5, size[0]+5);
+                  dst = dst.rowRange(5, size[1]+5);
+                }
+
+                let dx = parseInt(dxdy[1]);
+                let dy = parseInt(dxdy[3]);
+                let borderTypeArray = this.params.borderType;
+                let borderType;
+                if (borderTypeArray.length == 1) {
+                  borderType = cv[borderTypeArray[0]];
+                } else {
+                  borderType = cv[borderTypeArray[0]] | cv[borderTypeArray[1]];
+                }
                 },
               'teardown': function() {
                 src.delete();
@@ -73,13 +83,20 @@ function perf() {
     function addSobelModeCase(suite, combination, type) {
       totalCaseNum += combination.length;
       for (let i = 0; i < combination.length; ++i) {
-        let size = combination[i][0];
-        let matType = combination[i][1];
-        let ddepth = combination[i][2];
-        let direction = combination[i][3];
-        let ksize = combination[i][4];
-        let borderType = combination[i][5];
-        let params = {size: size, matType: matType, ddepth: ddepth, direction: direction, ksize:ksize, borderType:borderType};  
+        let size =  combination[i][0];
+        let ddepth = combination[i][1];
+        let dxdy = combination[i][2];
+        let borderType = combination[i][3];
+        let sizeArray = [size.width, size.height];
+        let ksize;
+        if (type < 2) {
+          ksize = 3;
+        } else {
+          ksize = 5;
+        }
+
+        let borderTypeArray = borderType.split("|");
+        let params = {size: sizeArray, ddepth: ddepth, dxdy: dxdy, ksize:ksize, borderType:borderTypeArray, type:type};
         addKernelCase(suite, params, type, addSobelCase);
       }
     }
@@ -88,44 +105,48 @@ function perf() {
         let suite = new Benchmark.Suite;
         totalCaseNum = 0;
         currentCaseId = 0;
+        let params = "";
+        let paramObjs = [];
+        paramObjs.push({name:"size", value:"", reg:[""], index:0});
+        paramObjs.push({name:"ddepth", value:"", reg:["/CV\_[0-9]+[FSUfsu]C1/g"], index:1});
+        paramObjs.push({name:"dxdy", value:"", reg:["/\\([0-2],[0-2]\\)/"], index:2});
 
-        if (/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+\)/g.test(paramsContent.toString())) {
-            let params = paramsContent.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+\)/g)[0];
-            
-            let paramObjs = [];
-            paramObjs.push({name:"size", value:"", reg:[""], index:0});
-            paramObjs.push({name:"matType", value:"", reg:["/CV\_[0-9]+[A-z]/"], index:1});
-            paramObjs.push({name:"ddepth", value:"", reg:["/CV\_[0-9]+[A-z]/g"], loc:1, index:2});
-            paramObjs.push({name:"direction", value:"", reg:["/dx/", "/dy/"], index:3});
-            paramObjs.push({name:"ksize", value:"", reg:["/k\_[0-9]/"], index:4});
-            paramObjs.push({name:"ksize", value:"", reg:["/BORDER\_[A-z]+\_?[A-z]*/"], index:5});
-
+        if (/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\([0-2],[0-2]\),[\ ]*\w+\)/g.test(paramsContent.toString())) {
+            params = paramsContent.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\([0-2],[0-2]\),[\ ]*\w+\)/g)[0];
+            paramObjs.push({name:"boderType", value:"", reg:["/BORDER\_\\w+/"], index:3});
+        } else if (/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\([0-2],[0-2]\),[\ ]*\w+\|\w+\)/g.test(paramsContent.toString())) {
+            params = paramsContent.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\([0-2],[0-2]\),[\ ]*\w+\|\w+\)/g)[0];
+            paramObjs.push({name:"boderType", value:"", reg:["/BORDER\_\\w+\\|BORDER\_\\w+/"], index:3});
+        }
+        
+        if (params != ""){
             let locationList = decodeParams2Case(params, paramObjs,sobelCombinations);
             for (let i = 0; i < locationList.length; i++){
                 let first = locationList[i][0];
                 let second = locationList[i][1];
-                addSobelModeCase(suite, [sobelCombinations[first][second]], 0);
+                addSobelModeCase(suite, [sobelCombinations[first][second]], first);
               }
         } else {
           log("no filter or getting invalid params, run all the cases");
-          addSobelModeCase(suite, combiSobelMode8U, 0);
-          addSobelModeCase(suite, combiSobelMode16U, 0);
-          addSobelModeCase(suite, combiSobelMode16S, 0);
-          addSobelModeCase(suite, combiSobelMode32F, 0);
-          addSobelModeCase(suite, combiSobelMode64F, 0);
+          addSobelModeCase(suite, combiSobelBorder3x3, 0);
+          addSobelModeCase(suite, combiSobelBorder3x3ROI, 1);
+          addSobelModeCase(suite, combiSobelBorder5x5, 2);
+          addSobelModeCase(suite, combiSobelBorder5x5ROI, 3);
         }
         setBenchmarkSuite(suite, "sobel", currentCaseId);
         log(`Running ${totalCaseNum} tests from Sobel`);
         suite.run({ 'async': true }); // run the benchmark
     }
 
-    let sobelCombinations = [combiSobelMode8U, combiSobelMode16U, combiSobelMode16S, combiSobelMode32F, combiSobelMode64F];
+    let sobelCombinations = [combiSobelBorder3x3, combiSobelBorder3x3ROI, combiSobelBorder5x5, combiSobelBorder5x5ROI];
 
     if (isNodeJs) {
         const args = process.argv.slice(2);
         let paramsContent = '';
-        if (/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+\)/g.test(args.toString())) {
-          paramsContent = args.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+,[\ ]*\w+\)/g)[0];
+        if (/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\([0-2],[0-2]\),[\ ]*\w+\)/g.test(args.toString())) {
+          paramsContent = args.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\([0-2],[0-2]\),[\ ]*\w+\)/g)[0];
+        } else if (/--test_param_filter=\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\([0-2],[0-2]\),[\ ]*\w+\|\w+\)/g.test(args.toString())) {
+          paramsContent = args.toString().match(/\([0-9]+x[0-9]+,[\ ]*\w+,[\ ]*\([0-2],[0-2]\),[\ ]*\w+\|\w+\)/g)[0];
         }
         genBenchmarkCase(paramsContent);
       } else {

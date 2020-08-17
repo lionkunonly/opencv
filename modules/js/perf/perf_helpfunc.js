@@ -107,13 +107,12 @@ function constructParamLog(params, kernel) {
     `${matType},${threshType})`;
   } else if (kernel == "sobel") {
     let size = params.size;
-    let matType = params.matType;
     let ddepth = params.ddepth;
-    let direction = params.direction;
+    let dxdy = params.dxdy;
     let ksize = params.ksize;
     let borderType = params.borderType;
-    paramLog = `params: (${parseInt(size.width)}x${parseInt(size.height)},`+
-    `${matType},${ddepth},${direction},${ksize},${borderType})`;
+    paramLog = `params: (${parseInt(size[0])}x${parseInt(size[1])},`+
+    `${ddepth},${dxdy},${borderType}, ksize:${ksize})`;
   }
   return paramLog;
 }

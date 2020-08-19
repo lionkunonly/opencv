@@ -113,6 +113,12 @@ function constructParamLog(params, kernel) {
     let borderType = params.borderType;
     paramLog = `params: (${parseInt(size[0])}x${parseInt(size[1])},`+
     `${ddepth},${dxdy},${borderType}, ksize:${ksize})`;
+  } else if (kernel == "filter2d") {
+    let size = params.size;
+    let ksize = params.ksize;
+    let borderMode = params.borderMode;
+    paramLog = `params: (${parseInt(size.width)}x${parseInt(size.height)},`+
+    `${ksize},${borderMode})`;
   }
   return paramLog;
 }

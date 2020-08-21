@@ -189,8 +189,15 @@ class Builder:
         cmd.append(self.opencv_dir)
         execute(cmd)
 
-    def build_opencvjs(self):
+    def build_opencvjs(self, is_move=False, path=""):
         execute(["make", "-j", str(multiprocessing.cpu_count()), "opencv.js"])
+        if is_move:
+            print(path)
+            print(self.build_dir)
+            new_path = os.path.join(self.build_dir, path)
+            print(new_path)
+            d = check_dir(new_path, True, True)
+            execute(["cp", "bin/opencv.js", "bin/opencv_js.js", path])
 
     def build_test(self):
         execute(["make", "-j", str(multiprocessing.cpu_count()), "opencv_js_test"])
@@ -245,6 +252,10 @@ if __name__ == "__main__":
         log.info("Cannot get Emscripten path, please specify it either by EMSCRIPTEN environment variable or --emscripten_dir option.")
         sys.exit(-1)
 
+    simd = args.simd
+    threads = args.threads
+    args.simd = False
+    args.threads = False
     builder = Builder(args)
 
     os.chdir(builder.build_dir)
@@ -274,6 +285,39 @@ if __name__ == "__main__":
     log.info("=====")
     builder.build_opencvjs()
 
+    if args.build_wasm:
+        builder.build_opencvjs(True, "bin/build_wasm")
+    else:
+        builder.build_opencvjs()
+
+    if simd:
+        args.simd = True
+        os.chdir("../")
+        simd_builder = Builder(args)
+        os.chdir(builder.build_dir)
+        simd_builder.config()
+        simd_builder.build_opencvjs(True, "bin/build_simd")
+
+    if threads:
+        args.threads = True
+        args.simd = False
+        os.chdir("../")
+        threads_builder = Builder(args)
+        os.chdir(builder.build_dir)
+        threads_builder.config()
+        threads_builder.build_opencvjs(True, "bin/build_mt")
+        execute(["cp", "bin/opencv_js.worker.js", "bin/build_mt"])
+
+    if simd and threads:
+        args.threads = True
+        args.simd = True
+        os.chdir("../")
+        tr_simd_builder = Builder(args)
+        os.chdir(builder.build_dir)
+        tr_simd_builder.config()
+        tr_simd_builder.build_opencvjs(True, "bin/build_mt_simd")
+        execute(["cp", "bin/opencv_js.worker.js", "bin/build_mt_simd"])
+    
     if args.build_test:
         log.info("=====")
         log.info("===== Building OpenCV.js tests")

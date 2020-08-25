@@ -189,15 +189,8 @@ class Builder:
         cmd.append(self.opencv_dir)
         execute(cmd)
 
-    def build_opencvjs(self, is_move=False, path=""):
+    def build_opencvjs(self):
         execute(["make", "-j", str(multiprocessing.cpu_count()), "opencv.js"])
-        if is_move:
-            print(path)
-            print(self.build_dir)
-            new_path = os.path.join(self.build_dir, path)
-            print(new_path)
-            d = check_dir(new_path, True, True)
-            execute(["cp", "bin/opencv.js", "bin/opencv_js.js", path])
 
     def build_test(self):
         execute(["make", "-j", str(multiprocessing.cpu_count()), "opencv_js_test"])
@@ -207,6 +200,9 @@ class Builder:
 
     def build_doc(self):
         execute(["make", "-j", str(multiprocessing.cpu_count()), "doxygen"])
+    
+    def build_loader(self):
+        execute(["make", "-j", str(multiprocessing.cpu_count()), "opencv_js_loader"])
 
 
 #===================================================================================================
@@ -228,6 +224,7 @@ if __name__ == "__main__":
     parser.add_argument('--build_test', action="store_true", help="Build tests")
     parser.add_argument('--build_perf', action="store_true", help="Build performance tests")
     parser.add_argument('--build_doc', action="store_true", help="Build tutorials")
+    parser.add_argument('--build_loader', action="store_true", help="Build OpenCV.js loader")
     parser.add_argument('--clean_build_dir', action="store_true", help="Clean build dir")
     parser.add_argument('--skip_config', action="store_true", help="Skip cmake config")
     parser.add_argument('--config_only', action="store_true", help="Only do cmake config")
@@ -252,10 +249,6 @@ if __name__ == "__main__":
         log.info("Cannot get Emscripten path, please specify it either by EMSCRIPTEN environment variable or --emscripten_dir option.")
         sys.exit(-1)
 
-    simd = args.simd
-    threads = args.threads
-    args.simd = False
-    args.threads = False
     builder = Builder(args)
 
     os.chdir(builder.build_dir)
@@ -284,39 +277,6 @@ if __name__ == "__main__":
     log.info("===== Building OpenCV.js")
     log.info("=====")
     builder.build_opencvjs()
-
-    if args.build_wasm:
-        builder.build_opencvjs(True, "bin/build_wasm")
-    else:
-        builder.build_opencvjs()
-
-    if simd:
-        args.simd = True
-        os.chdir("../")
-        simd_builder = Builder(args)
-        os.chdir(builder.build_dir)
-        simd_builder.config()
-        simd_builder.build_opencvjs(True, "bin/build_simd")
-
-    if threads:
-        args.threads = True
-        args.simd = False
-        os.chdir("../")
-        threads_builder = Builder(args)
-        os.chdir(builder.build_dir)
-        threads_builder.config()
-        threads_builder.build_opencvjs(True, "bin/build_mt")
-        execute(["cp", "bin/opencv_js.worker.js", "bin/build_mt"])
-
-    if simd and threads:
-        args.threads = True
-        args.simd = True
-        os.chdir("../")
-        tr_simd_builder = Builder(args)
-        os.chdir(builder.build_dir)
-        tr_simd_builder.config()
-        tr_simd_builder.build_opencvjs(True, "bin/build_mt_simd")
-        execute(["cp", "bin/opencv_js.worker.js", "bin/build_mt_simd"])
     
     if args.build_test:
         log.info("=====")
@@ -336,6 +296,11 @@ if __name__ == "__main__":
         log.info("=====")
         builder.build_doc()
 
+    if args.build_loader:
+        log.info("=====")
+        log.info("===== Building OpenCV.js loader")
+        log.info("=====")
+        builder.build_loader()       
 
     log.info("=====")
     log.info("===== Build finished")
@@ -360,3 +325,8 @@ if __name__ == "__main__":
         opencvjs_tutorial_path = find_file("tutorial_js_root.html", os.path.join(builder.build_dir, "doc", "doxygen", "html"))
         if check_file(opencvjs_tutorial_path):
             log.info("OpenCV.js tutorials location: %s", opencvjs_tutorial_path)
+
+    if args.build_loader:
+        opencvjs_loader_path = os.path.join(builder.build_dir, "bin", "loader.js")
+        if check_file(opencvjs_loader_path):
+            log.info("OpenCV.js loader location: %s", opencvjs_loader_path)

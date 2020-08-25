@@ -124,5 +124,4 @@ async function main() {
   }
 }
 
-openCVLoader("../../", main)
-// main();
+main();
